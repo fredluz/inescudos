@@ -2,6 +2,7 @@ import qrcode from 'qrcode-generator';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { FeedItem, PublicPlayer } from '../shared';
 import { chime, clock, countdown, FeedArt, feedText, Illustration, Money, unlockAudio, useNow, useSnapshot } from './lib';
+import { TvQuiz } from './quiz';
 
 const ANNOUNCE: FeedItem['kind'][] = ['perk', 'payday', 'prize'];
 function Rank({ title, players, field }: { title: string; players: PublicPlayer[]; field: 'balance' | 'earned' }) {
@@ -181,6 +182,8 @@ export function Tv() {
 					</div>
 				</div>
 			)}
+
+			{snap.quiz && <TvQuiz quiz={snap.quiz} sound={sound} />}
 		</div>
 	);
 }

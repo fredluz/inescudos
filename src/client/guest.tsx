@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { BARTENDERS_CHOICE_ID, type MenuItem, type Order, type Perk, type Snapshot } from '../shared';
 import { act, ago, chime, clock, countdown, FeedArt, feedText, GUEST_KEY, Illustration, Money, post, Thumb, toast, unlockAudio, useNow, useSnapshot, useStored } from './lib';
+import { GuestQuiz } from './quiz';
 
 export function Guest() {
 	const [token, setToken] = useStored(GUEST_KEY);
@@ -119,6 +120,7 @@ function GuestHome({ snap, token, online, onLogout }: { snap: Snapshot; token: s
 					<button class="primary">Dismiss</button>
 				</div>
 			)}
+			{snap.quiz && <GuestQuiz quiz={snap.quiz} token={token} />}
 		</div>
 	);
 }

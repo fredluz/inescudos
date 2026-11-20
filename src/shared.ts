@@ -100,6 +100,96 @@ export interface FeedItem {
 	kind: 'payday' | 'prize' | 'perk' | 'ready' | 'info' | 'transfer';
 }
 
+// ---- quizzes ----
+
+/** choice: 2-4 options, one correct; number: closest guess wins; text: typed answer matched against `answers`. */
+export type QuestionKind = 'choice' | 'number' | 'text';
+export type MediaType = 'image' | 'video' | 'audio';
+
+export interface QuizMedia {
+	type: MediaType;
+	/** https URL (files or YouTube) or a site path like /quiz/clip.mp3 */
+	url: string;
+	/** clip window in seconds (video/audio only) */
+	start?: number;
+	end?: number;
+}
+
+export interface QuizQuestion {
+	id: string;
+	kind: QuestionKind;
+	prompt: string;
+	/** choice only */
+	options: string[];
+	correct: number;
+	/** text only: accepted answers, the first is the one shown at the reveal */
+	answers: string[];
+	/** number only */
+	value: number;
+	media: QuizMedia | null;
+	seconds: number;
+}
+
+export interface Quiz {
+	id: string;
+	title: string;
+	category: string;
+	/** Ê$ paid for each correct answer */
+	reward: number;
+	questions: QuizQuestion[];
+}
+
+export type QuizPhase = 'lobby' | 'question' | 'reveal' | 'final';
+
+export interface QuizGame {
+	/** frozen copy, so editing the library mid-game is safe */
+	quiz: Quiz;
+	phase: QuizPhase;
+	/** -1 in the lobby */
+	index: number;
+	endsAt: number;
+	answers: Record<string, { v: number | string; ts: number }>;
+	/** reveal: who is marked correct for the current question */
+	marks: Record<string, boolean>;
+	/** reveal: ledger group of the current question's prizes */
+	txGroup: string;
+	/** correct answers per player across the game */
+	scores: Record<string, number>;
+	/** bumped by staff to replay the question's media on the TV */
+	playCount: number;
+}
+
+export interface QuizBoardRow {
+	name: string;
+	correct: number;
+	won: number;
+}
+
+/** What every screen sees of a running quiz. Never contains the answer before the reveal. */
+export interface QuizView {
+	title: string;
+	category: string;
+	reward: number;
+	phase: QuizPhase;
+	index: number;
+	total: number;
+	endsAt: number;
+	playCount: number;
+	question: Omit<QuizQuestion, 'correct' | 'answers' | 'value'> | null;
+	answered: number;
+	players: number;
+	reveal?: { answer: string; correct: number | null; counts: number[]; winners: string[] };
+	board: QuizBoardRow[];
+	/** guest only */
+	mine?: { answer: string | null; correct?: boolean; score: number };
+}
+
+/** Staff-only detail for the live quiz. */
+export interface QuizStaffView {
+	key: string;
+	answers: { pid: string; name: string; answer: string; correct?: boolean }[];
+}
+
 export interface State {
 	players: Record<string, Player>;
 	tx: Tx[];
@@ -113,6 +203,8 @@ export interface State {
 	staffTokens: string[];
 	lastPaydayKey?: string;
 	menuRevision?: number;
+	quizzes: Quiz[];
+	game: QuizGame | null;
 }
 
 // ---- snapshot (server -> client) ----
@@ -164,6 +256,9 @@ export interface Snapshot {
 	orders?: StaffOrder[];
 	log?: LogGroup[];
 	actions?: QuickAction[];
+	quiz: QuizView | null;
+	quizzes?: Quiz[];
+	quizStaff?: QuizStaffView;
 }
 
 // ---- defaults ----
@@ -370,6 +465,8 @@ export const defaultState = (): State => ({
 	feed: [],
 	tokens: {},
 	staffTokens: [],
+	quizzes: [],
+	game: null,
 });
 
 export const TX_KINDS: TxKind[] = [

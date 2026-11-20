@@ -44,6 +44,10 @@ export function useStored(key: string): [string | null, (v: string | null) => vo
 	];
 }
 
+/** Server time minus this device's clock, refreshed with every snapshot. */
+let clockOffset = 0;
+export const serverNow = () => Date.now() + clockOffset;
+
 /** Live party state over a WebSocket; reconnects on drop and when the phone wakes up. */
 export function useSnapshot(token: string | null): { snap: Snapshot | null; online: boolean } {
 	const [snap, setSnap] = useState<Snapshot | null>(null);
@@ -63,7 +67,10 @@ export function useSnapshot(token: string | null): { snap: Snapshot | null; onli
 				setOnline(true);
 			};
 			sock.onmessage = e => {
-				if (e.data !== 'pong') setSnap(JSON.parse(e.data as string) as Snapshot);
+				if (e.data === 'pong') return;
+				const next = JSON.parse(e.data as string) as Snapshot;
+				clockOffset = next.now - Date.now();
+				setSnap(next);
 			};
 			sock.onclose = () => {
 				if (sock !== ws || disposed) return;

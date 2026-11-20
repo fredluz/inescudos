@@ -1,4 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
+import { HttpError } from './http';
+import { answerKey, cleanQuiz, judge, parseAnswer, showAnswer } from './quiz';
+import { starterQuizzes } from './quizzes';
 import {
 	ACTIVE,
 	defaultState,
@@ -13,6 +16,8 @@ import {
 	type OrderStatus,
 	type Perk,
 	type QuickAction,
+	type QuizGame,
+	type QuizView,
 	type Settings,
 	type Snapshot,
 	type State,
@@ -38,15 +43,6 @@ function nextPaydayAt(now: number, hours: number[]): number | null {
 	let t = Math.floor(now / HOUR) * HOUR + HOUR;
 	for (let i = 0; i < 48; i++, t += HOUR) if (hours.includes(lisbonHour(t))) return t;
 	return null;
-}
-
-class HttpError extends Error {
-	constructor(
-		message: string,
-		readonly status = 400,
-	) {
-		super(message);
-	}
 }
 
 const uid = () => crypto.randomUUID().replaceAll('-', '').slice(0, 12);
@@ -93,6 +89,7 @@ export class Party extends DurableObject<Env> {
 		ctx.blockConcurrencyWhile(async () => {
 			const stored = await ctx.storage.get<State>('state');
 			this.s = { ...defaultState(), ...stored };
+			if (!stored?.quizzes) this.s.quizzes = starterQuizzes();
 			if (stored) {
 				const revision = stored.menuRevision ?? 0;
 				const olderMenu = revision < MENU_REVISION;
@@ -105,7 +102,7 @@ export class Party extends DurableObject<Env> {
 				this.s.perks = perks;
 				if (olderMenu || renamedPerks) await ctx.storage.put('state', this.s);
 			}
-			if (this.s.settings.autoPayday && (await ctx.storage.getAlarm()) == null) await this.schedule();
+			if ((await ctx.storage.getAlarm()) == null) await this.schedule();
 		});
 	}
 
@@ -406,10 +403,21 @@ export class Party extends DurableObject<Env> {
 					this.feed(`${me.name} sent ${to.name} ${amount} Ê$${note ? ` · “${note}”` : ''}`, 'transfer');
 					break;
 				}
+				case 'quizAnswer': {
+					const g = this.liveGame();
+					const q = g.quiz.questions[g.index];
+					if (g.phase !== 'question' || !q) throw new HttpError('No question is open');
+					if (Date.now() > g.endsAt) throw new HttpError('Time’s up');
+					if (g.answers[pid]) throw new HttpError('You already answered');
+					g.answers[pid] = { v: parseAnswer(q, body.answer), ts: Date.now() };
+					if (this.activePlayers().every(p => g.answers[p.id])) this.reveal(g);
+					break;
+				}
 				default:
 					throw new HttpError('Unknown action');
 			}
 			await this.commit();
+			if (type === 'quizAnswer') await this.schedule();
 			return;
 		}
 
@@ -594,7 +602,15 @@ export class Party extends DurableObject<Env> {
 			case 'reset': {
 				if (body.confirm !== 'RESET') throw new HttpError('Type RESET to confirm');
 				const fresh = defaultState();
-				this.s = { ...fresh, menu: this.s.menu, perks: this.s.perks, actions: this.s.actions, settings: this.s.settings, staffTokens: this.s.staffTokens };
+				this.s = {
+					...fresh,
+					menu: this.s.menu,
+					perks: this.s.perks,
+					actions: this.s.actions,
+					settings: this.s.settings,
+					staffTokens: this.s.staffTokens,
+					quizzes: this.s.quizzes,
+				};
 				for (const m of this.s.menu) if (!m.archived) m.available = true;
 				break;
 			}
@@ -602,22 +618,238 @@ export class Party extends DurableObject<Env> {
 				this.s.menu = defaultState().menu;
 				break;
 			}
+			case 'saveQuiz': {
+				const quiz = cleanQuiz(body.quiz, uid);
+				const i = this.s.quizzes.findIndex(q => q.id === quiz.id);
+				if (i >= 0) this.s.quizzes[i] = quiz;
+				else this.s.quizzes.push(quiz);
+				break;
+			}
+			case 'importQuizzes': {
+				const quizzes = (Array.isArray(body.quizzes) ? body.quizzes : [body.quizzes]).map(q => cleanQuiz(q, uid));
+				const taken = new Set(this.s.quizzes.map(q => q.id));
+				for (const quiz of quizzes) {
+					if (taken.has(quiz.id)) quiz.id = uid();
+					taken.add(quiz.id);
+					this.s.quizzes.push(quiz);
+				}
+				break;
+			}
+			case 'deleteQuiz': {
+				this.s.quizzes = this.s.quizzes.filter(q => q.id !== body.quizId);
+				break;
+			}
+			case 'quizStart': {
+				if (this.s.game && this.s.game.phase !== 'final') throw new HttpError('Another quiz is running. End it first.');
+				const quiz = this.s.quizzes.find(q => q.id === body.quizId);
+				if (!quiz) throw new HttpError('Unknown quiz');
+				this.s.game = {
+					quiz: structuredClone(quiz),
+					phase: 'lobby',
+					index: -1,
+					endsAt: 0,
+					answers: {},
+					marks: {},
+					txGroup: '',
+					scores: {},
+					playCount: 0,
+				};
+				break;
+			}
+			case 'quizNext': {
+				const g = this.liveGame();
+				if (g.phase === 'question') throw new HttpError('Reveal the answer first');
+				if (g.phase === 'final') throw new HttpError('The quiz is over');
+				this.advance(g);
+				break;
+			}
+			case 'quizSkip': {
+				const g = this.liveGame();
+				if (g.phase !== 'question') throw new HttpError('No question is open');
+				this.advance(g);
+				break;
+			}
+			case 'quizReveal': {
+				const g = this.liveGame();
+				if (g.phase !== 'question') throw new HttpError('No question is open');
+				this.reveal(g);
+				break;
+			}
+			case 'quizExtend': {
+				const g = this.liveGame();
+				if (g.phase !== 'question') throw new HttpError('No question is open');
+				g.endsAt = Math.max(g.endsAt, Date.now()) + int(body.seconds ?? 10, 'Seconds', 1, 120) * 1000;
+				break;
+			}
+			case 'quizReplay': {
+				this.liveGame().playCount++;
+				break;
+			}
+			case 'quizMark': {
+				const g = this.liveGame();
+				if (g.phase !== 'reveal') throw new HttpError('Marks can only change during the reveal');
+				this.mark(g, this.player(body.pid).id, body.correct === true);
+				break;
+			}
+			case 'quizEnd': {
+				this.finish(this.liveGame());
+				break;
+			}
+			case 'quizClose': {
+				this.s.game = null;
+				break;
+			}
 			default:
 				throw new HttpError('Unknown action');
 		}
 		await this.commit();
+		if (typeof type === 'string' && type.startsWith('quiz')) await this.schedule();
+	}
+
+	// ---------- quiz ----------
+
+	private liveGame(): QuizGame {
+		if (!this.s.game) throw new HttpError('No quiz is running');
+		return this.s.game;
+	}
+
+	/** Opens the next question, or ends the quiz after the last one. */
+	private advance(g: QuizGame): void {
+		const q = g.quiz.questions[g.index + 1];
+		if (!q) return this.finish(g);
+		g.index++;
+		g.phase = 'question';
+		g.answers = {};
+		g.marks = {};
+		g.txGroup = '';
+		g.endsAt = Date.now() + q.seconds * 1000;
+	}
+
+	private reveal(g: QuizGame): void {
+		const q = g.quiz.questions[g.index];
+		if (g.phase !== 'question' || !q) return;
+		g.phase = 'reveal';
+		g.endsAt = Date.now();
+		g.txGroup = uid();
+		g.marks = {};
+		for (const [pid, right] of Object.entries(judge(q, g.answers)))
+			if (this.s.players[pid] && !this.s.players[pid].removed) this.mark(g, pid, right);
+	}
+
+	/** Sets a player's mark for the revealed question and pays or claws back its prize. */
+	private mark(g: QuizGame, pid: string, right: boolean): void {
+		const was = g.marks[pid] === true;
+		g.marks[pid] = right;
+		if (was === right) return;
+		g.scores[pid] = (g.scores[pid] ?? 0) + (right ? 1 : -1);
+		if (!g.quiz.reward) return;
+		if (right)
+			this.s.tx.push({
+				id: uid(),
+				group: g.txGroup,
+				ts: Date.now(),
+				pid,
+				amt: g.quiz.reward,
+				kind: 'prize',
+				reason: `Quiz · ${g.quiz.title} Q${g.index + 1}`,
+			});
+		else this.s.tx = this.s.tx.filter(t => !(t.group === g.txGroup && t.pid === pid));
+	}
+
+	private finish(g: QuizGame): void {
+		if (g.phase === 'final') return;
+		g.phase = 'final';
+		g.answers = {};
+		const board = this.quizBoard(g);
+		const top = board[0];
+		if (top) {
+			const winners = board.filter(r => r.correct === top.correct).map(r => r.name);
+			this.feed(`${g.quiz.title} quiz won by ${winners.join(' & ')} · ${top.correct} right`, 'info');
+		}
+	}
+
+	private quizBoard(g: QuizGame) {
+		return Object.entries(g.scores)
+			.filter(([pid, n]) => n > 0 && this.s.players[pid] && !this.s.players[pid].removed)
+			.map(([pid, n]) => ({ name: this.s.players[pid]!.name, correct: n, won: n * g.quiz.reward }))
+			.sort((a, b) => b.correct - a.correct || a.name.localeCompare(b.name));
+	}
+
+	private quizView(who: Who): QuizView | null {
+		const g = this.s.game;
+		if (!g) return null;
+		const q = g.quiz.questions[g.index];
+		const live = q && (g.phase === 'question' || g.phase === 'reveal') ? q : null;
+		const view: QuizView = {
+			title: g.quiz.title,
+			category: g.quiz.category,
+			reward: g.quiz.reward,
+			phase: g.phase,
+			index: g.index,
+			total: g.quiz.questions.length,
+			endsAt: g.endsAt,
+			playCount: g.playCount,
+			question: live && { id: live.id, kind: live.kind, prompt: live.prompt, options: live.options, media: live.media, seconds: live.seconds },
+			answered: Object.keys(g.answers).length,
+			players: this.activePlayers().length,
+			board: this.quizBoard(g),
+		};
+		if (live && g.phase === 'reveal')
+			view.reveal = {
+				answer: answerKey(live),
+				correct: live.kind === 'choice' ? live.correct : null,
+				counts: live.options.map((_, i) => Object.values(g.answers).filter(a => a.v === i).length),
+				winners: Object.keys(g.marks)
+					.filter(pid => g.marks[pid] && this.s.players[pid])
+					.map(pid => this.s.players[pid]!.name),
+			};
+		if (who.role === 'guest') {
+			const a = g.answers[who.pid];
+			view.mine = {
+				answer: a && live ? showAnswer(live, a.v) : null,
+				correct: g.phase === 'reveal' ? g.marks[who.pid] === true : undefined,
+				score: g.scores[who.pid] ?? 0,
+			};
+		}
+		return view;
+	}
+
+	private quizStaff() {
+		const g = this.s.game;
+		const q = g?.quiz.questions[g.index];
+		if (!g || !q) return undefined;
+		return {
+			key: answerKey(q),
+			answers: Object.entries(g.answers)
+				.filter(([pid]) => this.s.players[pid] && !this.s.players[pid].removed)
+				.sort((a, b) => a[1].ts - b[1].ts)
+				.map(([pid, a]) => ({
+					pid,
+					name: this.s.players[pid]!.name,
+					answer: showAnswer(q, a.v),
+					correct: g.phase === 'reveal' ? g.marks[pid] === true : undefined,
+				})),
+		};
 	}
 
 	// ---------- paydays ----------
 
 	private async schedule(): Promise<void> {
-		const next = this.s.settings.autoPayday ? nextPaydayAt(Date.now(), this.s.settings.paydayHours) : null;
-		if (next) await this.ctx.storage.setAlarm(next);
+		const s = this.s.settings;
+		const payday = s.autoPayday ? nextPaydayAt(Date.now(), s.paydayHours) : null;
+		const timer = this.s.game?.phase === 'question' ? this.s.game.endsAt : null;
+		const next = Math.min(payday ?? Infinity, timer ?? Infinity);
+		if (next !== Infinity) await this.ctx.storage.setAlarm(next);
 		else await this.ctx.storage.deleteAlarm();
 	}
 
 	override async alarm(): Promise<void> {
 		const now = Date.now();
+		const g = this.s.game;
+		if (g?.phase === 'question' && now >= g.endsAt - 250) {
+			this.reveal(g);
+			await this.commit();
+		}
 		const hourStart = Math.floor(now / HOUR) * HOUR;
 		const s = this.s.settings;
 		if (s.autoPayday && now - hourStart < 10 * 60_000 && s.paydayHours.includes(lisbonHour(hourStart))) {
@@ -665,6 +897,7 @@ export class Party extends DurableObject<Env> {
 				ts: o.ts,
 			})),
 			nextPayday: s.settings.autoPayday ? nextPaydayAt(Date.now(), s.settings.paydayHours) : null,
+			quiz: this.quizView(who),
 		};
 		if (who.role === 'guest') {
 			const p = s.players[who.pid]!;
@@ -682,6 +915,8 @@ export class Party extends DurableObject<Env> {
 				orders: [...active, ...closed].map(o => ({ ...o, pname: name(o.pid) })),
 				actions: s.actions,
 				log: this.log(),
+				quizzes: s.quizzes,
+				quizStaff: this.quizStaff(),
 			};
 		}
 		return base;

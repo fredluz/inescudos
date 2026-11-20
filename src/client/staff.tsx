@@ -13,9 +13,10 @@ import {
 } from '../shared';
 import { ago, act, chime, clock, countdown, Illustration, Money, post, STAFF_KEY, Thumb, unlockAudio, useNow, useSnapshot, useStored, toast } from './lib';
 import { Sheet } from './guest';
+import { QuizTab } from './quiz-staff';
 
-type Tab = 'Bar' | 'Bank' | 'Menu' | 'Perks' | 'Players' | 'Log' | 'Settings';
-const TABS: Tab[] = ['Bar', 'Bank', 'Menu', 'Perks', 'Players', 'Log', 'Settings'];
+type Tab = 'Bar' | 'Quiz' | 'Bank' | 'Menu' | 'Perks' | 'Players' | 'Log' | 'Settings';
+const TABS: Tab[] = ['Bar', 'Quiz', 'Bank', 'Menu', 'Perks', 'Players', 'Log', 'Settings'];
 
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 const num = (s: string) => (s.trim() === '' ? NaN : Number(s));
@@ -95,6 +96,7 @@ export function Staff() {
 			</nav>
 			<main class="content">
 				{tab === 'Bar' && <BarTab snap={snap} token={token} />}
+				{tab === 'Quiz' && <QuizTab snap={snap} token={token} />}
 				{tab === 'Bank' && <BankTab snap={snap} token={token} />}
 				{tab === 'Menu' && <MenuTab snap={snap} token={token} />}
 				{tab === 'Perks' && <PerksTab snap={snap} token={token} />}
