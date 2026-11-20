@@ -1,8 +1,28 @@
 import { useState } from 'preact/hooks';
-import type { MediaType, QuestionKind, Quiz, QuizQuestion, Snapshot } from '../shared';
+import type { MediaType, QuestionKind, Quiz, QuizMedia, QuizQuestion, Snapshot } from '../shared';
 import { act, Money, serverNow, toast, useNow } from './lib';
 import { Sheet } from './guest';
-import { SHAPES } from './quiz';
+import { SHAPES, youTubeId } from './quiz';
+
+/** Staff-side player for checking a question's clip; plays on this device, not the TV. */
+function Preview({ media }: { media: QuizMedia }) {
+	const yt = youTubeId(media.url);
+	if (yt) {
+		const at = media.start ? `&t=${Math.floor(media.start)}` : '';
+		return (
+			<a class="qz-preview" href={`https://www.youtube.com/watch?v=${yt}${at}`} target="_blank" rel="noreferrer">
+				Open clip on YouTube
+			</a>
+		);
+	}
+	if (media.type === 'image') return <img class="qz-preview" src={media.url} alt="" />;
+	const src = media.start != null || media.end != null ? `${media.url}#t=${media.start ?? 0}${media.end != null ? `,${media.end}` : ''}` : media.url;
+	return media.type === 'video' ? (
+		<video class="qz-preview" src={src} controls playsInline preload="metadata" />
+	) : (
+		<audio class="qz-preview" src={src} controls preload="none" />
+	);
+}
 
 type P = { snap: Snapshot; token: string };
 
@@ -125,7 +145,7 @@ function LivePanel({ snap, token }: P) {
 							Answer: <strong>{st.key}</strong>
 						</p>
 					)}
-					{q.media && <p class="sub qz-url">{q.media.type}: {q.media.url}</p>}
+					{q.media && <Preview key={q.id} media={q.media} />}
 				</>
 			)}
 
@@ -326,6 +346,7 @@ function QuizEditor({ init, token, onDone }: { init: Quiz; token: string; onDone
 							<small>
 								{KIND_LABEL[q.kind]}
 								{q.mediaUrl ? ` · ${q.mediaType}` : ''}
+								{` · ${q.kind === 'choice' ? q.options[q.correct] : q.kind === 'number' ? q.value : q.answers.split('\n')[0]}`}
 							</small>
 						</button>
 						{isOpen && (
@@ -405,6 +426,17 @@ function QuizEditor({ init, token, onDone }: { init: Quiz; token: string; onDone
 											<input inputMode="decimal" value={q.mediaEnd} onInput={e => up(i, { mediaEnd: e.currentTarget.value })} />
 										</label>
 									</div>
+								)}
+								{q.mediaUrl.trim() && (
+									<Preview
+										key={q.mediaUrl}
+										media={{
+											type: q.mediaType,
+											url: q.mediaUrl.trim(),
+											start: q.mediaStart.trim() ? Number(q.mediaStart) : undefined,
+											end: q.mediaEnd.trim() ? Number(q.mediaEnd) : undefined,
+										}}
+									/>
 								)}
 								{q.mediaUrl && q.mediaType === 'audio' && <p class="hint">Sound only hides the video on the TV, so YouTube links work for name-the-song.</p>}
 

@@ -8,7 +8,7 @@ function secondsLeft(quiz: QuizView): number {
 	return Math.max(0, Math.ceil((quiz.endsAt - serverNow()) / 1000));
 }
 
-function youTubeId(url: string): string | null {
+export function youTubeId(url: string): string | null {
 	return /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/.exec(url)?.[1] ?? null;
 }
 

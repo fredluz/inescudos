@@ -92,7 +92,8 @@
 .qz-staff h3 { margin-top: 1rem; }
 .qz-live { border: 3px double var(--ink); }
 .qz-live .qz-prompt { font-family: var(--serif); font-size: 1.25rem; margin: .5rem 0; }
-.qz-live .qz-url { overflow-wrap: anywhere; }
+.qz-staff .qz-preview { display: block; width: 100%; max-height: 40vh; margin: .4rem 0; object-fit: contain; }
+.qz-staff a.qz-preview { color: var(--ink); font-weight: 600; }
 .qz-ctl { display: flex; flex-wrap: wrap; gap: 8px; margin: .8rem 0; }
 .qz-ctl > button { width: auto; flex: 1 1 auto; min-height: 52px; }
 .qz-answers, .qz-live ol { padding: 0; margin: 0; list-style: none; }
@@ -104,7 +105,7 @@
 .qz-q-head { display: flex; align-items: baseline; gap: .7rem; width: 100%; padding: .8rem 1rem; text-align: left; }
 .qz-q-head b { color: var(--ink); font-family: var(--serif); }
 .qz-q-head span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.qz-q-head small { color: var(--muted); flex: none; }
+.qz-q-head small { color: var(--muted); flex: 0 1 auto; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qz-q .staff-form { padding: 0 1rem 1rem; }
 .qz-q.open { border-color: var(--ink); }
 .qz-secs { flex: 0 0 7rem; }
