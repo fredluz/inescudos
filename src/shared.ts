@@ -168,7 +168,8 @@ export interface Snapshot {
 
 // ---- defaults ----
 
-export const MENU_REVISION = 1;
+export const MENU_REVISION = 2;
+export const BARTENDERS_CHOICE_ID = 'bartenders-choice';
 
 const menuItem = (id: string, name: string, desc: string, section: string, price: number, serve: Serve, stock: number | null = null): MenuItem => ({
 	id, name, desc, section, price, serve, stock,
@@ -183,7 +184,13 @@ const mocktail = (id: string, name: string, desc: string, section: string, price
 const food = (id: string, name: string, desc: string, section: string, price: number, stock: number | null = null) =>
 	menuItem(id, name, desc, section, price, 'self', stock);
 
+const bartendersChoice: MenuItem = {
+	...cocktail(BARTENDERS_CHOICE_ID, 'Bartender’s Choice', 'Tell us what you like.', 'Bar classics', 15),
+	img: '/illustrations/menu-waiter.webp',
+};
+
 export const DEFAULT_MENU: MenuItem[] = [
+	bartendersChoice,
 	// Bar classics
 	cocktail("gin-tonic", "Gin & Tonic", "Gin, tonic water & lime.", "Bar classics", 10),
 	cocktail("mojito", "Mojito", "White rum, fresh mint, lime, sugar & soda.", "Bar classics", 15),
@@ -258,18 +265,29 @@ export const DEFAULT_MENU: MenuItem[] = [
 ];
 
 // Keep removed defaults available to historical order records and refunds.
-const retiredDefaults = new Set(['bartenders-choice', 'mousse', 'pastry', 'brigadeiro', 'white-truffle', 'nut-bonbon', 'oreo']);
+const retiredDefaults = new Set(['mousse', 'pastry', 'brigadeiro', 'white-truffle', 'nut-bonbon', 'oreo']);
 
-export function refreshMenu(previous: MenuItem[]): MenuItem[] {
-	const byId = new Map(previous.map(item => [item.id, item]));
-	const printed = DEFAULT_MENU.map(item => {
+export function refreshMenu(previous: MenuItem[], revision = 0): MenuItem[] {
+	const existingChoice = previous.find(item => item.id === BARTENDERS_CHOICE_ID);
+	const featured = existingChoice ? {
+		...bartendersChoice,
+		price: existingChoice.price,
+		stock: existingChoice.stock,
+		available: existingChoice.archived || existingChoice.available,
+	} : { ...bartendersChoice };
+
+	const remaining = previous.filter(item => item.id !== BARTENDERS_CHOICE_ID);
+	if (revision >= 1) return [featured, ...remaining];
+
+	const byId = new Map(remaining.map(item => [item.id, item]));
+	const printed = DEFAULT_MENU.slice(1).map(item => {
 		const existing = byId.get(item.id);
 		byId.delete(item.id);
 		return existing
 			? { ...item, price: existing.price, available: existing.available, stock: existing.stock ?? item.stock }
 			: { ...item };
 	});
-	return [...printed, ...Array.from(byId.values(), item =>
+	return [featured, ...printed, ...Array.from(byId.values(), item =>
 		retiredDefaults.has(item.id) ? { ...item, available: false, archived: true } : item,
 	)];
 }

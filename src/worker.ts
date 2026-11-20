@@ -94,11 +94,12 @@ export class Party extends DurableObject<Env> {
 			const stored = await ctx.storage.get<State>('state');
 			this.s = { ...defaultState(), ...stored };
 			if (stored) {
-				const olderMenu = (stored.menuRevision ?? 0) < MENU_REVISION;
+				const revision = stored.menuRevision ?? 0;
+				const olderMenu = revision < MENU_REVISION;
 				const perks = refreshPerkNames(this.s.perks);
 				const renamedPerks = perks.some((perk, index) => perk !== this.s.perks[index]);
 				if (olderMenu) {
-					this.s.menu = refreshMenu(this.s.menu);
+					this.s.menu = refreshMenu(this.s.menu, revision);
 					this.s.menuRevision = MENU_REVISION;
 				}
 				this.s.perks = perks;

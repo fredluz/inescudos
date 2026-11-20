@@ -819,6 +819,20 @@ input, select, textarea { background-color: #fff8eb; }
 	text-transform: uppercase;
 }
 .menu-switch button.on { background: var(--ink); border-color: var(--ink); color: var(--card); }
+.featured-drink {
+	margin-top: 1rem;
+	min-height: 118px;
+	padding: .7rem clamp(.55rem, 3vw, 1.6rem);
+	gap: clamp(.45rem, 3vw, 1.5rem);
+	border: 3px double var(--ink);
+	background: #f4e0bb;
+}
+.featured-drink:hover:not(:disabled) { background: #efd6a9; }
+.featured-drink .thumb { width: clamp(56px, 17vw, 102px); height: clamp(73px, 17vw, 102px); }
+.featured-drink strong { font: 900 clamp(1.35rem, 4.8vw, 2.6rem)/1.06 var(--serif); }
+.featured-drink strong::first-letter { color: var(--ink); }
+.featured-drink .sub { font-size: .94rem; }
+.featured-drink .money { font-size: clamp(1.15rem, 3vw, 1.5rem); }
 .menu-section { margin-top: 1.3rem; }
 .menu-section .section {
 	display: flex;

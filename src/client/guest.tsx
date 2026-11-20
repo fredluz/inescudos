@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { MenuItem, Order, Perk, Snapshot } from '../shared';
+import { BARTENDERS_CHOICE_ID, type MenuItem, type Order, type Perk, type Snapshot } from '../shared';
 import { act, ago, chime, clock, countdown, FeedArt, feedText, GUEST_KEY, Illustration, Money, post, Thumb, toast, unlockAudio, useNow, useSnapshot, useStored } from './lib';
 
 export function Guest() {
@@ -169,6 +169,7 @@ function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve:
 	const picked = snap.menu.find(item => item.id === pickedId);
 	const menu = snap.menu.filter(item => !item.archived && item.serve === serve &&
 		(serve === 'self' || (item.mocktail === true) === mocktails));
+	const featured = menu.find(item => item.id === BARTENDERS_CHOICE_ID);
 	const now = useNow(30_000);
 	const active = (snap.myOrders ?? []).filter(o => o.status === 'queued' || o.status === 'making' || o.status === 'ready');
 	// server sends the queue in serving order (skip-the-queue first, then oldest)
@@ -218,29 +219,35 @@ function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve:
 					})}
 				</section>
 			)}
-			{groupBy(menu, m => m.section).map(([section, items]) => (
+			{featured && <MenuEntry item={featured} featured onPick={() => setPickedId(featured.id)} />}
+			{groupBy(menu.filter(item => item !== featured), item => item.section).map(([section, items]) => (
 				<section class="menu-section" key={section}>
 					<h2 class="section">{section}</h2>
 					<div class="menu-grid">
-						{items.map(it => {
-							const soldOut = !it.available || it.stock === 0;
-							return (
-								<button key={it.id} class={`item ${soldOut ? 'out' : ''}`} disabled={soldOut} onClick={() => setPickedId(it.id)}>
-									<Thumb img={it.img} fallback={it.serve === 'self' ? 'other-savouries' : 'dry-martini'} />
-									<div class="item-body">
-										<strong>{it.name}</strong>
-										<span class="sub">{it.desc}</span>
-										{it.stock != null && it.stock > 0 && <span class="tag warn">{it.stock} left</span>}
-									</div>
-									<div class="price">{soldOut ? <span class="tag">Sold out</span> : <Money n={it.price} />}</div>
-								</button>
-							);
-						})}
+						{items.map(item => <MenuEntry key={item.id} item={item} onPick={() => setPickedId(item.id)} />)}
 					</div>
 				</section>
 			))}
 			{picked && <ItemSheet key={picked.id} item={picked} snap={snap} token={token} onClose={() => setPickedId(null)} />}
 		</>
+	);
+}
+
+function MenuEntry({ item, featured = false, onPick }: { item: MenuItem; featured?: boolean; onPick: () => void }) {
+	const soldOut = item.stock === 0;
+	const unavailable = !item.available || soldOut;
+	return (
+		<button class={`item${featured ? ' featured-drink' : ''}${unavailable ? ' out' : ''}`} disabled={unavailable} onClick={onPick}>
+			<Thumb img={item.img} fallback={item.serve === 'self' ? 'other-savouries' : 'dry-martini'} size={featured ? 102 : 68} />
+			<div class="item-body">
+				<strong>{item.name}</strong>
+				<span class="sub">{item.desc}</span>
+				{item.stock != null && item.stock > 0 && <span class="tag warn">{item.stock} left</span>}
+			</div>
+			<div class="price">
+				{unavailable ? <span class="tag">{soldOut ? 'Sold out' : 'Unavailable'}</span> : <Money n={item.price} />}
+			</div>
+		</button>
 	);
 }
 
