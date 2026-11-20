@@ -470,10 +470,6 @@ label.check input {
 	opacity: 0.45;
 }
 
-.item.perk {
-	padding: 0.9rem 1rem;
-}
-
 .item-body {
 	flex: 1;
 	display: grid;
@@ -964,4 +960,96 @@ button:focus-visible, a:focus-visible {
 }
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { animation-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Perks menu */
+.menu-masthead.perks-masthead {
+	grid-template-columns: minmax(0, 1fr);
+	justify-items: center;
+	min-height: 0;
+	padding: clamp(.9rem, 2.5vw, 1.45rem) 1rem;
+}
+
+.perks-title {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: clamp(.65rem, 2vw, 1.2rem);
+}
+
+.perks-title .illustration {
+	width: clamp(3rem, 8vw, 5rem);
+	height: 3.15rem;
+}
+
+.perks-title h1 {
+	margin: 0;
+}
+
+.perks-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: clamp(.55rem, 1.5vw, 1rem);
+	margin-top: clamp(.8rem, 2.5vw, 1.4rem);
+}
+
+.perk-tile {
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	justify-items: center;
+	align-items: center;
+	gap: .45rem;
+	min-height: 8.5rem;
+	padding: .65rem clamp(.45rem, 1.4vw, 1rem) .6rem;
+	border: 1px solid var(--line);
+	background: var(--card);
+	color: var(--dark);
+	text-align: center;
+}
+
+@media (hover: hover) {
+	.perk-tile:hover { background: var(--wash); border-color: var(--ink); }
+}
+
+.perk-tile:active {
+	background: var(--wash-hover);
+}
+
+.perk-tile .illustration {
+	width: 64px;
+	height: clamp(44px, 8vw, 58px);
+}
+
+.perk-tile strong {
+	font: 400 clamp(1.1rem, 2.8vw, 1.35rem)/1.08 var(--condensed);
+	letter-spacing: .025em;
+	text-transform: uppercase;
+	overflow-wrap: anywhere;
+}
+
+.perk-tile .money {
+	font-size: .92rem;
+}
+
+.perk-sheet-head .illustration {
+	flex: none;
+	width: 60px;
+	height: 58px;
+}
+
+.perk-sheet-head h2 {
+	margin: 0;
+}
+
+.perks-empty {
+	margin: 1.25rem 0 0;
+	text-align: center;
+}
+
+@media (min-width: 610px) {
+	.perks-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 900px) {
+	.perks-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }

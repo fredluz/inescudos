@@ -323,26 +323,41 @@ function ItemSheet({ item, snap, token, onClose }: { item: MenuItem; snap: Snaps
 	);
 }
 
+const illustratedPerks = new Set([
+	'skip-queue', 'karaoke-jump', 'mic-moment', 'pick-song', 'song-veto',
+	'force-duet', 'force-solo', 'quiz-category', 'quiz-5050', 'steal-question',
+]);
+
+function perkArt(id: string) {
+	return illustratedPerks.has(id) ? `perk-${id}` : 'nav-perks';
+}
+
 function PerksTab({ snap, token }: { snap: Snapshot; token: string }) {
-	const [picked, setPicked] = useState<Perk | null>(null);
+	const [pickedId, setPickedId] = useState<string | null>(null);
+	const picked = snap.perks.find(perk => perk.id === pickedId);
 	return (
 		<>
-			<p class="sub">Perks appear on the TV screen. All perk purchases are final.</p>
-			<div class="list">
-				{snap.perks.map(p => (
-					<button key={p.id} class="item perk" onClick={() => setPicked(p)}>
-						<div class="item-body">
-							<strong>{p.name}</strong>
-						</div>
-						<div class="price">
-							<Money n={p.price} />
-						</div>
+			<header class="menu-masthead perks-masthead">
+				<div class="perks-title">
+					<Illustration name="nav-perks" />
+					<h1>Perks</h1>
+				</div>
+			</header>
+			{snap.perks.length === 0 && <p class="sub perks-empty">No perks available.</p>}
+			<div class="perks-grid">
+				{snap.perks.map(perk => (
+					<button key={perk.id} class="perk-tile" onClick={() => setPickedId(perk.id)}>
+						<Illustration name={perkArt(perk.id)} />
+						<strong>{perk.name}</strong>
+						<Money n={perk.price} />
 					</button>
 				))}
 			</div>
-			<h2 class="section">Recent perks</h2>
-			<Feed items={snap.feed.filter(f => f.kind === 'perk').slice(0, 10)} empty="No perks used yet." />
-			{picked && <PerkSheet perk={picked} snap={snap} token={token} onClose={() => setPicked(null)} />}
+			<section class="menu-section">
+				<h2 class="section">Recent perks</h2>
+				<Feed items={snap.feed.filter(f => f.kind === 'perk').slice(0, 10)} empty="No perks used yet." />
+			</section>
+			{picked && <PerkSheet key={picked.id} perk={picked} snap={snap} token={token} onClose={() => setPickedId(null)} />}
 		</>
 	);
 }
@@ -354,7 +369,10 @@ function PerkSheet({ perk, snap, token, onClose }: { perk: Perk; snap: Snapshot;
 	const after = snap.me!.balance - perk.price;
 	return (
 		<Sheet onClose={onClose}>
-			<h2>{perk.name}</h2>
+			<div class="sheet-head perk-sheet-head">
+				<Illustration name={perkArt(perk.id)} />
+				<h2>{perk.name}</h2>
+			</div>
 			{perk.effect === 'skipQueue' && <p class="sub">Place a drink order first.</p>}
 			{perk.needsTarget && (
 				<label>
