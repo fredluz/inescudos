@@ -875,17 +875,17 @@ button:focus-visible, a:focus-visible {
 	min-height: 118px;
 	padding: .7rem clamp(.55rem, 3vw, 1.6rem);
 	gap: clamp(.45rem, 3vw, 1.5rem);
-	border: 3px double var(--ink);
-	background: var(--ink);
-	color: var(--card);
-	box-shadow: 0 4px 0 var(--dark);
+	border: 1px solid var(--line);
+	border-left: 4px solid var(--ink);
+	background: var(--card);
+	color: var(--dark);
 }
-.featured-drink:hover:not(:disabled) { background: #752119; }
-.featured-drink .thumb { width: clamp(56px, 17vw, 102px); height: clamp(73px, 17vw, 102px); background: var(--card); mix-blend-mode: normal; border-radius: 50%; padding: .35rem; }
-.featured-drink strong { font: 400 clamp(1.25rem, 4.45vw, 2.4rem)/1.1 var(--display); }
+.featured-drink:hover:not(:disabled) { background: var(--wash-hover); }
+.featured-drink .thumb { width: clamp(56px, 17vw, 102px); height: clamp(73px, 17vw, 102px); }
+.featured-drink strong { font: italic 700 clamp(1.25rem, 4.45vw, 2.4rem)/1.1 var(--serif); color: var(--ink); }
 .featured-drink strong::first-letter { color: inherit; }
-.featured-drink .sub { font-size: .94rem; color: var(--card); }
-.featured-drink .money { font-size: clamp(1.15rem, 3vw, 1.5rem); color: var(--card); }
+.featured-drink .sub { font-size: .94rem; }
+.featured-drink .money { font-size: clamp(1.15rem, 3vw, 1.5rem); }
 .menu-section { margin-top: 1.3rem; }
 .menu-section .section {
 	display: flex;
