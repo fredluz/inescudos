@@ -1,4 +1,4 @@
-.tv { position: fixed; inset: 0; overflow: hidden; background: var(--paper); color: var(--ink); font-family: var(--sans); display: flex; flex-direction: column; padding: 1.2vw 2vw 0.8vw; gap: 1vw; font-size: clamp(12px, 1.35vw, 26px); }
+.tv { position: fixed; inset: 0; overflow: hidden; color: var(--ink); font-family: var(--sans); display: flex; flex-direction: column; padding: 1.2vw 2vw 0.8vw; gap: 1vw; font-size: clamp(12px, 1.35vw, 26px); }
 .tv-loading { margin: auto; font-family: var(--serif); font-size: 8vw; }
 .tv header { display: flex; align-items: center; gap: 2.5vw; border-bottom: 2px solid var(--gold); padding-bottom: 0.6vw; }
 .tv .bar-status { font-weight: 700; text-transform: uppercase; letter-spacing: .1em; padding: .3em .9em; border-radius: 99px; border: 2px solid var(--gold); }
@@ -48,14 +48,14 @@
 .tv header { border-bottom: 3px double var(--line); }
 .tv .brand { margin-right: auto; gap: 1vw; }
 .tv .brand > .illustration { width: 8vw; height: 6vw; }
-.tv .brand > span, .tv-loading { font: 900 clamp(2rem, 5vw, 7rem)/.96 var(--serif); letter-spacing: -.045em; }
+.tv .brand > span, .tv-loading { font: 400 clamp(1.7rem, 4.7vw, 6.6rem)/1.02 var(--display); letter-spacing: -.045em; }
 .tv :is(.tv-box, .bar-status, .payday, footer .qr, .announce .card) { border-radius: 0; }
 .tv .tv-box { background: var(--card); }
-.tv .tv-box h2 { font: 700 clamp(1rem, 2.05vw, 2rem)/1.1 var(--condensed); letter-spacing: .06em; }
-.tv .tv-box.ready { background: #f2dfbf; color: var(--dark); border: 3px double var(--ink); box-shadow: none; }
+.tv .tv-box h2 { font: 400 clamp(1.1rem, 2.25vw, 2.2rem)/1.1 var(--condensed); letter-spacing: .06em; }
+.tv .tv-box.ready { background: var(--wash); color: var(--dark); border: 3px double var(--ink); box-shadow: none; }
 .tv .tv-box.ready .none { color: var(--muted); }
 .tv ul.feed li { align-items: center; }
-.tv ul.feed li.perk { background: #ead6b7; color: var(--dark); }
+.tv ul.feed li.perk { background: var(--wash-hover); color: var(--dark); }
 .tv ul.feed li.perk time { color: var(--muted); }
 .tv .announce { background: rgb(45 33 28 / .76); }
 .tv .announce .feed-art { width: 9vw; height: 8vw; margin: 0 auto 1rem; display: block; }
