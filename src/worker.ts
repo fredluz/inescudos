@@ -295,7 +295,7 @@ export class Party extends DurableObject<Env> {
 	}
 
 	private takeStock(item: MenuItem, qty: number): void {
-		if (!item.available) throw new HttpError(`${item.name} is unavailable`);
+		if (!item.available || item.archived) throw new HttpError(`${item.name} is unavailable`);
 		if (item.stock != null) {
 			if (item.stock < qty) throw new HttpError(item.stock === 0 ? `${item.name} is sold out` : `Only ${item.stock} ${item.name} left`);
 			item.stock -= qty;

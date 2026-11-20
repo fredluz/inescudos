@@ -168,7 +168,7 @@ export interface Snapshot {
 
 // ---- defaults ----
 
-export const MENU_REVISION = 4;
+export const MENU_REVISION = 5;
 export const BARTENDERS_CHOICE_ID = 'bartenders-choice';
 
 const menuItem = (id: string, name: string, desc: string, section: string, price: number, serve: Serve, stock: number | null = null): MenuItem => ({
@@ -257,7 +257,6 @@ export const DEFAULT_MENU: MenuItem[] = [
 	food("peanut-butter-truffle", "Peanut Butter Truffle", "Chocolate-coated peanut butter truffle topped with peanuts.", "Sweets", 4, 12),
 	food("biscoff-truffle", "Biscoff Truffle", "White-coated truffle with Biscoff biscuit crumbs.", "Sweets", 4, 9),
 	kinderBuenoTruffle,
-	food("chocolate-cake", "Chocolate Cake", "A slice of birthday cake.", "Sweets", 10),
 
 	// Savouries
 	food("croissant", "Croissant", "Flaky croissant.", "Savouries", 6),
@@ -271,6 +270,8 @@ const retiredDefaults = new Set(['mousse', 'pastry', 'brigadeiro', 'white-truffl
 
 export function refreshMenu(previous: MenuItem[], revision = 0): MenuItem[] {
 	if (revision >= MENU_REVISION) return previous;
+	previous = previous.map(item => item.id === 'chocolate-cake' ? { ...item, available: false, archived: true } : item);
+	if (revision === 4) return previous;
 	previous = previous.map(item => item.id === BARTENDERS_CHOICE_ID ? { ...item, desc: bartendersChoice.desc } : item);
 	if (revision === 3) return previous;
 	if (revision === 2) {

@@ -99,7 +99,7 @@ function GuestHome({ snap, token, online, onLogout }: { snap: Snapshot; token: s
 				{(
 					[
 						['drinks', 'dry-martini', 'Drinks'],
-						['food', 'chocolate-cake', 'Food'],
+						['food', 'croissant', 'Food'],
 						['perks', 'nav-perks', 'Perks'],
 						['wallet', 'coins', 'Wallet'],
 						['board', 'nav-board', 'Board'],
@@ -188,7 +188,7 @@ function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve:
 						</div>
 					)}
 				</div>
-				{serve === 'self' && <Illustration name="chocolate-cake" className="menu-side-art" />}
+				{serve === 'self' && <Illustration name="biscoff-mousse" className="menu-side-art" />}
 			</div>
 			{serve === 'bar' && !snap.settings.barOpen && <div class="notice">Bar closed. Food is still available.</div>}
 			{serve === 'bar' && active.length > 0 && (
@@ -241,7 +241,7 @@ function MenuEntry({ item, featured = false, onPick }: { item: MenuItem; feature
 			<div class="item-body">
 				{featured && <span class="featured-prompt">Not sure?</span>}
 				<strong>{item.name}</strong>
-				<span class="sub">{item.desc}</span>
+				{item.serve === 'bar' && <span class="sub">{item.desc}</span>}
 				{item.stock != null && item.stock > 0 && <span class="tag warn">{item.stock} left</span>}
 			</div>
 			<div class="price">
@@ -285,7 +285,7 @@ function ItemSheet({ item, snap, token, onClose }: { item: MenuItem; snap: Snaps
 				<Thumb img={item.img} fallback={bar ? 'dry-martini' : 'other-savouries'} size={104} />
 				<div>
 					<h2>{item.name}</h2>
-					<p class="sub">{item.desc}</p>
+					{bar && <p class="sub">{item.desc}</p>}
 				</div>
 			</div>
 			{bar ? (
