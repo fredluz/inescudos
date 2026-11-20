@@ -8,7 +8,8 @@ export interface MenuItem {
 	price: number;
 	serve: Serve;
 	img: string;
-	emoji: string;
+	mocktail?: boolean;
+	archived?: boolean;
 	available: boolean;
 	/** null = unlimited */
 	stock: number | null;
@@ -111,6 +112,7 @@ export interface State {
 	tokens: Record<string, string>;
 	staffTokens: string[];
 	lastPaydayKey?: string;
+	menuRevision?: number;
 }
 
 // ---- snapshot (server -> client) ----
@@ -166,78 +168,111 @@ export interface Snapshot {
 
 // ---- defaults ----
 
-const IMG = 'https://ines-cocktail-night.pages.dev/assets/optimized/menu/';
+export const MENU_REVISION = 1;
 
-const cocktail = (
-	id: string,
-	name: string,
-	desc: string,
-	section: 'Easy pours' | 'Shaken & muddled' | 'Showstoppers',
-): MenuItem => ({
-	id,
-	name,
-	desc,
-	section,
-	price: section === 'Easy pours' ? 10 : section === 'Shaken & muddled' ? 15 : 25,
-	serve: 'bar',
-	img: `${IMG}${id}.webp`,
-	emoji: '🍸',
+const menuItem = (id: string, name: string, desc: string, section: string, price: number, serve: Serve, stock: number | null = null): MenuItem => ({
+	id, name, desc, section, price, serve, stock,
+	img: `/illustrations/${id}.webp`,
 	available: true,
-	stock: null,
 });
-
-const sweet = (id: string, name: string, desc: string, price: number, emoji: string): MenuItem => ({
-	id,
-	name,
-	desc,
-	section: 'Sweets',
-	price,
-	serve: 'self',
-	img: '',
-	emoji,
-	available: true,
-	stock: null,
+const cocktail = (id: string, name: string, desc: string, section: string, price: number) =>
+	menuItem(id, name, desc, section, price, 'bar');
+const mocktail = (id: string, name: string, desc: string, section: string, price: number): MenuItem => ({
+	...cocktail(id, name, desc, section, price), mocktail: true,
 });
+const food = (id: string, name: string, desc: string, section: string, price: number, stock: number | null = null) =>
+	menuItem(id, name, desc, section, price, 'self', stock);
 
 export const DEFAULT_MENU: MenuItem[] = [
-	cocktail('gin-tonic', 'Gin & Tonic', 'Gin, tonic water & lime.', 'Easy pours'),
-	cocktail('cuba-libre', 'Cuba Libre', 'White rum, cola & fresh lime.', 'Easy pours'),
-	cocktail('tom-collins', 'Tom Collins', 'Gin, fresh lemon, sugar & soda.', 'Easy pours'),
-	cocktail('tequila-sunrise', 'Tequila Sunrise', 'Tequila, orange juice & grenadine.', 'Easy pours'),
-	cocktail('black-russian', 'Black Russian', 'Vodka & coffee liqueur, over ice.', 'Easy pours'),
-	cocktail('white-russian', 'White Russian', 'Vodka, coffee liqueur & cream, over ice.', 'Easy pours'),
-	cocktail('margarita', 'Margarita', 'Tequila, orange liqueur & lime, salted rim.', 'Shaken & muddled'),
-	cocktail('daiquiri', 'Classic Daiquiri', 'White rum, fresh lime & sugar.', 'Shaken & muddled'),
-	cocktail('mojito', 'Mojito', 'White rum, fresh mint, lime, sugar & soda.', 'Shaken & muddled'),
-	cocktail('caipirinha', 'Caipirinha', 'Cachaça, fresh lime & sugar, crushed ice.', 'Shaken & muddled'),
-	cocktail('caipiroska', 'Caipiroska', 'Vodka, muddled lime & sugar, crushed ice.', 'Shaken & muddled'),
-	cocktail('cosmopolitan', 'Cosmopolitan', 'Citrus vodka, orange liqueur, cranberry & lime.', 'Shaken & muddled'),
-	cocktail('whiskey-sour', 'Whiskey Sour', 'Whiskey, fresh lemon & sugar.', 'Shaken & muddled'),
-	cocktail('white-lady', 'White Lady', 'Gin, orange liqueur & fresh lemon.', 'Shaken & muddled'),
-	cocktail('lemon-drop-martini', 'Lemon Drop Martini', 'Citrus vodka, orange liqueur & lemon, sugar rim.', 'Shaken & muddled'),
-	cocktail('kamikaze', 'Kamikaze', 'Vodka, orange liqueur & fresh lime.', 'Shaken & muddled'),
-	cocktail('old-fashioned', 'Old Fashioned', 'Bourbon or rye, sugar & bitters, orange peel.', 'Shaken & muddled'),
-	cocktail('manhattan', 'Manhattan', 'Whiskey, sweet vermouth & bitters, cherry.', 'Shaken & muddled'),
-	cocktail('espresso-martini', 'Espresso Martini', 'Vodka, coffee liqueur & fresh espresso.', 'Showstoppers'),
-	cocktail('passionfruit-martini', 'Passion Fruit Martini', 'Vanilla vodka, passion fruit, lime & vanilla.', 'Showstoppers'),
-	cocktail('pina-colada', 'Piña Colada', 'White rum, pineapple & coconut cream.', 'Showstoppers'),
-	cocktail('strawberry-daiquiri', 'Strawberry Daiquiri', 'Rum, strawberries, lime & sugar, blended.', 'Showstoppers'),
-	cocktail('raspberry-daiquiri', 'Raspberry Daiquiri', 'Rum, raspberries, lime & sugar, blended.', 'Showstoppers'),
-	cocktail('mudslide', 'Mudslide', 'Vodka, coffee liqueur, Irish cream & chocolate.', 'Showstoppers'),
-	cocktail('long-island-iced-tea', 'Long Island Iced Tea', 'Five spirits, lemon & cola. Good luck.', 'Showstoppers'),
-	{
-		...cocktail('bartenders-choice', "Bartender's Choice", 'Tell Inês your mood, she picks.', 'Shaken & muddled'),
-		img: '',
-		emoji: '✨',
-	},
-	sweet('chocolate-cake', 'Chocolate cake', 'A slice of the birthday cake.', 10, '🎂'),
-	sweet('mousse', 'Mousse', 'One mousse cup.', 8, '🍮'),
-	sweet('pastry', 'Pastry slice', 'Flaky pastry, sweet filling.', 6, '🥐'),
-	sweet('brigadeiro', 'Brigadeiro', 'Dark chocolate truffle.', 4, '🍫'),
-	sweet('white-truffle', 'White chocolate truffle', 'With a crunchy crumb on top.', 4, '⚪'),
-	sweet('nut-bonbon', 'Chocolate nut bonbon', 'Dark chocolate, nut on top.', 4, '🌰'),
-	sweet('oreo', 'Oreos', 'A couple of Oreos.', 3, '🍪'),
+	// Bar classics
+	cocktail("gin-tonic", "Gin & Tonic", "Gin, tonic water & lime.", "Bar classics", 10),
+	cocktail("mojito", "Mojito", "White rum, fresh mint, lime, sugar & soda.", "Bar classics", 15),
+	cocktail("cuba-libre", "Cuba Libre", "White rum, cola & fresh lime.", "Bar classics", 10),
+	cocktail("tom-collins", "Tom Collins", "Gin, fresh lemon, sugar & soda.", "Bar classics", 10),
+	cocktail("long-island-iced-tea", "Long Island Iced Tea", "Vodka, gin, tequila, white rum, orange liqueur, lemon, sugar syrup & cola.", "Bar classics", 25),
+	cocktail("dry-martini", "Dry Martini", "Gin, dry vermouth & an olive.", "Bar classics", 15),
+
+	// Citrus & sours
+	cocktail("cosmopolitan", "Cosmopolitan", "Citrus vodka, orange liqueur, cranberry, lime & raspberries.", "Citrus & sours", 15),
+	cocktail("daiquiri", "Classic Daiquiri", "White rum, fresh lime & sugar.", "Citrus & sours", 15),
+	cocktail("margarita", "Margarita", "Tequila, orange liqueur & lime, with a salted rim.", "Citrus & sours", 15),
+	cocktail("mango-margarita", "Mango Margarita", "Tequila, Cointreau, mango purée, lime & sugar syrup.", "Citrus & sours", 15),
+	cocktail("caipirinha", "Caipirinha", "Cachaça, fresh lime & sugar, over crushed ice.", "Citrus & sours", 15),
+
+	// Lemon & lime
+	cocktail("white-lady", "White Lady", "Gin, orange liqueur, fresh lemon, sugar syrup & egg white.", "Lemon & lime", 15),
+	cocktail("lemon-drop-martini", "Lemon Drop Martini", "Citrus vodka, orange liqueur & fresh lemon, with a sugar rim.", "Lemon & lime", 15),
+	cocktail("kamikaze", "Kamikaze", "Vodka, orange liqueur & fresh lime.", "Lemon & lime", 15),
+	cocktail("caipiroska", "Caipiroska", "Vodka, muddled lime & sugar, over crushed ice.", "Lemon & lime", 15),
+
+	// Berry sweet
+	cocktail("strawberry-daiquiri", "Strawberry Daiquiri", "White rum, frozen strawberries, fresh lime & sugar syrup.", "Berry sweet", 25),
+	cocktail("raspberry-daiquiri", "Raspberry Daiquiri", "White rum, frozen raspberries, lime & sugar syrup, blended with ice.", "Berry sweet", 25),
+	cocktail("bramble", "Bramble", "Gin, lemon, berry jam & berries, over crushed ice.", "Berry sweet", 15),
+
+	// Tropical favourites
+	cocktail("pina-colada", "Piña Colada", "White rum, pineapple & coconut cream.", "Tropical favourites", 25),
+	cocktail("passionfruit-martini", "Passion Fruit Martini", "Vodka, passionfruit juice, lime & a hint of vanilla.", "Tropical favourites", 25),
+	cocktail("tequila-sunrise", "Tequila Sunrise", "Tequila, orange juice & grenadine, with orange and a cherry.", "Tropical favourites", 10),
+
+	// The whiskey hour
+	cocktail("manhattan", "Manhattan", "Whiskey, sweet vermouth & aromatic bitters, with a cocktail cherry.", "The whiskey hour", 15),
+	cocktail("old-fashioned", "Old Fashioned", "Bourbon or rye whiskey, sugar & aromatic bitters, with orange peel.", "The whiskey hour", 15),
+	cocktail("whiskey-sour", "Whiskey Sour", "Whiskey, fresh lemon & sugar; optional egg-white foam.", "The whiskey hour", 15),
+
+	// Coffee & cream
+	cocktail("espresso-martini", "Espresso Martini", "Vodka, coffee liqueur & fresh espresso.", "Coffee & cream", 25),
+	cocktail("tiramisu-espresso-martini", "Tiramisu Espresso Martini", "Baileys, vodka, espresso & coffee liqueur, with cocoa and a ladyfinger.", "Coffee & cream", 25),
+	cocktail("mudslide", "Mudslide", "Vodka, coffee liqueur, Irish cream & cream, with a chocolate drizzle.", "Coffee & cream", 25),
+	cocktail("white-russian", "White Russian", "Vodka, coffee liqueur & cream, over ice.", "Coffee & cream", 10),
+	cocktail("black-russian", "Black Russian", "Vodka & coffee liqueur, over ice.", "Coffee & cream", 10),
+
+	// Fresh & sparkling
+	mocktail("raspberry-mint-fizz", "Raspberry & Mint Fizz", "Raspberries, mint, lime & lemon-lime soda.", "Fresh & sparkling", 10),
+	mocktail("passionfruit-cooler", "Passionfruit Cooler", "Passionfruit nectar, lime, tonic water & mint.", "Fresh & sparkling", 10),
+	mocktail("virgin-mojito", "Virgin Mojito", "Fresh mint, lime & lemon-lime soda.", "Fresh & sparkling", 10),
+	mocktail("sunset-cooler", "Sunset Cooler", "Orange, pineapple, lime, groselha & lemon-lime soda.", "Fresh & sparkling", 10),
+	mocktail("virgin-mango-margarita", "Virgin Mango Margarita", "Mango purée, fresh lime & lemon-lime soda, with a salt half-rim.", "Fresh & sparkling", 10),
+	mocktail("passion-at-the-disco", "Passion at the Disco", "Fresh lime, passion fruit syrup & tonic water.", "Fresh & sparkling", 10),
+
+	// Creamy & indulgent
+	mocktail("virgin-pina-colada", "Virgin Piña Colada", "Pineapple, coconut milk, condensed coconut milk & lime.", "Creamy & indulgent", 10),
+	mocktail("chocolate-martini", "Chocolate Martini", "Milk, condensed milk, chocolate, espresso & vanilla.", "Creamy & indulgent", 10),
+	mocktail("espresso-cream-martini", "Espresso Cream Martini", "Espresso, milk, cream, sugar syrup & vanilla.", "Creamy & indulgent", 10),
+	mocktail("vanilla-cream-fizz", "Vanilla Cream Fizz", "Lemon-lime soda, a splash of cream & vanilla.", "Creamy & indulgent", 10),
+
+	// Sweets
+	food("biscoff-mousse", "Biscoff Mousse", "Layers of mousse and Biscoff biscuit.", "Sweets", 8),
+	food("oreo-mousse", "Oreo Mousse", "Cookies-and-cream mousse with Oreo crumbs.", "Sweets", 8),
+	food("covered-oreos", "Covered Oreos", "White chocolate-coated sandwich biscuits.", "Sweets", 3),
+	food("nutella-truffle", "Nutella Truffle", "Chocolate-coated Nutella truffle. Contains hazelnuts.", "Sweets", 4, 10),
+	food("peanut-butter-truffle", "Peanut Butter Truffle", "Chocolate-coated peanut butter truffle topped with peanuts.", "Sweets", 4, 12),
+	food("biscoff-truffle", "Biscoff Truffle", "White-coated truffle with Biscoff biscuit crumbs.", "Sweets", 4, 9),
+	food("chocolate-cake", "Chocolate Cake", "A slice of birthday cake.", "Sweets", 10),
+
+	// Savouries
+	food("croissant", "Croissant", "Flaky croissant.", "Savouries", 6),
+	food("croquetes", "Croquetes", "Breaded Portuguese croquettes.", "Savouries", 5),
+	food("rissois", "Rissóis", "Crescent-shaped Portuguese savoury pastries.", "Savouries", 5),
+	food("other-savouries", "Assorted Savouries", "Ask what is on the table.", "Savouries", 5),
 ];
+
+// Keep removed defaults available to historical order records and refunds.
+const retiredDefaults = new Set(['bartenders-choice', 'mousse', 'pastry', 'brigadeiro', 'white-truffle', 'nut-bonbon', 'oreo']);
+
+export function refreshMenu(previous: MenuItem[]): MenuItem[] {
+	const byId = new Map(previous.map(item => [item.id, item]));
+	const printed = DEFAULT_MENU.map(item => {
+		const existing = byId.get(item.id);
+		byId.delete(item.id);
+		return existing
+			? { ...item, price: existing.price, available: existing.available, stock: existing.stock ?? item.stock }
+			: { ...item };
+	});
+	return [...printed, ...Array.from(byId.values(), item =>
+		retiredDefaults.has(item.id) ? { ...item, available: false, archived: true } : item,
+	)];
+}
 
 export const DEFAULT_PERKS: Perk[] = [
 	{ id: 'skip-queue', name: 'Skip the drinks queue', price: 15, needsTarget: false, effect: 'skipQueue' },
@@ -280,6 +315,7 @@ export const defaultState = (): State => ({
 	tx: [],
 	orders: [],
 	menu: structuredClone(DEFAULT_MENU),
+	menuRevision: MENU_REVISION,
 	perks: structuredClone(DEFAULT_PERKS),
 	actions: structuredClone(DEFAULT_ACTIONS),
 	settings: structuredClone(DEFAULT_SETTINGS),

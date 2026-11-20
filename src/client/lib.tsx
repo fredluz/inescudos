@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { Snapshot } from '../shared';
+import type { FeedItem, Snapshot } from '../shared';
 
 export const GUEST_KEY = 'inescudos.token';
 export const STAFF_KEY = 'inescudos.staff';
@@ -184,12 +184,27 @@ export function unlockAudio(): void {
 	} catch {}
 }
 
-export function Thumb({ img, emoji, size = 64 }: { img: string; emoji: string; size?: number }) {
-	return img ? (
-		<img class="thumb" src={img} alt="" width={size} height={size} loading="lazy" />
-	) : (
-		<span class="thumb emoji" style={{ width: size, height: size, fontSize: size * 0.55 }}>
-			{emoji}
-		</span>
+export function Illustration({ name, className = '' }: { name: string; className?: string }) {
+	return <img class={`illustration ${className}`} src={`/illustrations/${name}.webp`} alt="" />;
+}
+
+export function Thumb({ img, fallback = 'dry-martini', size = 68 }: { img?: string; fallback?: string; size?: number }) {
+	return (
+		<img class="thumb" src={img?.startsWith('/illustrations/') ? img : `/illustrations/${fallback}.webp`}
+			alt="" width={size} height={size} loading="lazy" />
 	);
+}
+
+const feedArt: Record<FeedItem['kind'], string> = {
+	ready: 'dry-martini', perk: 'menu-pianist', prize: 'coins',
+	payday: 'coins', transfer: 'coins', info: 'other-savouries',
+};
+
+export function FeedArt({ kind }: { kind: FeedItem['kind'] }) {
+	return <Illustration name={feedArt[kind]} className="feed-art" />;
+}
+
+export function feedText(text: string) {
+	// Existing events may have a pictograph prefix from the original feed.
+	return text.replace(/^\p{Extended_Pictographic}\uFE0F? /u, '');
 }

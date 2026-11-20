@@ -2,6 +2,8 @@ import { DurableObject } from 'cloudflare:workers';
 import {
 	ACTIVE,
 	defaultState,
+	MENU_REVISION,
+	refreshMenu,
 	TX_KINDS,
 	type FeedItem,
 	type LogGroup,
@@ -90,6 +92,11 @@ export class Party extends DurableObject<Env> {
 		ctx.blockConcurrencyWhile(async () => {
 			const stored = await ctx.storage.get<State>('state');
 			this.s = { ...defaultState(), ...stored };
+			if (stored && (stored.menuRevision ?? 0) < MENU_REVISION) {
+				this.s.menu = refreshMenu(this.s.menu);
+				this.s.menuRevision = MENU_REVISION;
+				await ctx.storage.put('state', this.s);
+			}
 			if (this.s.settings.autoPayday && (await ctx.storage.getAlarm()) == null) await this.schedule();
 		});
 	}
@@ -183,7 +190,7 @@ export class Party extends DurableObject<Env> {
 		if (this.findByName(name)) throw new HttpError(`"${name}" is taken. Log in instead, or pick another name.`);
 		this.s.players[id] = { id, name, pinHash, joinedAt: Date.now() };
 		this.addTx([{ pid: id, amt: this.s.settings.startBalance }], 'start', 'Welcome money');
-		this.feed(`👋 ${name} joined the party`, 'info');
+		this.feed(`${name} joined the party`, 'info');
 		return id;
 	}
 
@@ -276,7 +283,7 @@ export class Party extends DurableObject<Env> {
 			'payday',
 			'Payday',
 		);
-		this.feed(`💰 Payday! Everyone +${amt} Ê$`, 'payday');
+		this.feed(`Payday! Everyone +${amt} Ê$`, 'payday');
 	}
 
 	private takeStock(item: MenuItem, qty: number): void {
@@ -298,10 +305,10 @@ export class Party extends DurableObject<Env> {
 		const item = this.item(body.itemId);
 		if (item.serve !== 'bar') throw new HttpError(`${item.name} is self-serve`);
 		this.requireFunds(pid, item.price);
-		this.takeStock(item, 1);
-		const virgin = body.virgin === true;
 		const note = str(body.note, 'Note', 120, true);
-		const [tx] = this.addTx([{ pid, amt: -item.price }], 'order', `${item.name}${virgin ? ' (mocktail)' : ''}`);
+		this.takeStock(item, 1);
+		const virgin = item.mocktail === true;
+		const [tx] = this.addTx([{ pid, amt: -item.price }], 'order', item.name);
 		const now = Date.now();
 		const o: Order = {
 			id: uid(),
@@ -370,7 +377,7 @@ export class Party extends DurableObject<Env> {
 						mine.updatedAt = Date.now();
 					}
 					this.addTx([{ pid, amt: -perk.price }], 'perk', target ? `${perk.name} → ${target.name}` : perk.name);
-					this.feed(`📣 ${me.name}: ${perk.name}${target ? ` → ${target.name}` : ''}`, 'perk');
+					this.feed(`${me.name}: ${perk.name}${target ? ` → ${target.name}` : ''}`, 'perk');
 					break;
 				}
 				case 'transfer': {
@@ -388,7 +395,7 @@ export class Party extends DurableObject<Env> {
 						'transfer',
 						reason,
 					);
-					this.feed(`💸 ${me.name} sent ${to.name} ${amount} Ê$${note ? ` · “${note}”` : ''}`, 'transfer');
+					this.feed(`${me.name} sent ${to.name} ${amount} Ê$${note ? ` · “${note}”` : ''}`, 'transfer');
 					break;
 				}
 				default:
@@ -409,7 +416,7 @@ export class Party extends DurableObject<Env> {
 				o.updatedAt = Date.now();
 				if (status === 'cancelled') this.refundOrder(o);
 				if (status === 'ready')
-					this.feed(`🍸 ${this.s.players[o.pid]?.name ?? '?'}, your ${o.itemName} is ready!`, 'ready');
+					this.feed(`${this.s.players[o.pid]?.name ?? '?'}, your ${o.itemName} is ready!`, 'ready');
 				break;
 			}
 			case 'chargeOrder': {
@@ -427,7 +434,7 @@ export class Party extends DurableObject<Env> {
 			}
 			case 'setBarOpen': {
 				this.s.settings.barOpen = body.open === true;
-				this.feed(this.s.settings.barOpen ? '🟢 The bar is open' : '🔴 The bar is closed for a bit', 'info');
+				this.feed(this.s.settings.barOpen ? 'The bar is open' : 'The bar is closed for a bit', 'info');
 				break;
 			}
 			case 'grant': {
@@ -449,8 +456,7 @@ export class Party extends DurableObject<Env> {
 					reason,
 				);
 				if (kind === 'prize' || kind === 'contribution') {
-					const icon = kind === 'prize' ? '🏆' : '🎁';
-					this.feed(`${icon} ${players.map(p => p.name).join(', ')} +${amount} Ê$ · ${reason}`, 'prize');
+					this.feed(`${players.map(p => p.name).join(', ')} +${amount} Ê$ · ${reason}`, 'prize');
 				}
 				break;
 			}
@@ -482,6 +488,16 @@ export class Party extends DurableObject<Env> {
 				await this.schedule();
 				break;
 			}
+			case 'adjustStock': {
+				const item = this.item(body.itemId);
+				const delta = int(body.delta, 'Stock adjustment', -1, 1);
+				item.stock = Math.min(10_000, Math.max(0, (item.stock ?? 0) + delta));
+				break;
+			}
+			case 'setItemAvailability': {
+				this.item(body.itemId).available = body.available === true;
+				break;
+			}
 			case 'saveItem': {
 				const v = (body.item ?? {}) as Partial<MenuItem>;
 				const existing = v.id ? this.s.menu.find(m => m.id === v.id) : undefined;
@@ -494,7 +510,7 @@ export class Party extends DurableObject<Env> {
 					price: int(v.price, 'Price', 0, 10_000),
 					serve: v.serve === 'self' ? 'self' : 'bar',
 					img: existing?.img ?? '',
-					emoji: str(v.emoji, 'Emoji', 8, true) || (v.serve === 'self' ? '🍰' : '🍸'),
+					mocktail: v.serve !== 'self' && (v.mocktail ?? existing?.mocktail) === true,
 					available: v.available !== false,
 					stock,
 				};
@@ -571,7 +587,7 @@ export class Party extends DurableObject<Env> {
 				if (body.confirm !== 'RESET') throw new HttpError('Type RESET to confirm');
 				const fresh = defaultState();
 				this.s = { ...fresh, menu: this.s.menu, perks: this.s.perks, actions: this.s.actions, settings: this.s.settings, staffTokens: this.s.staffTokens };
-				for (const m of this.s.menu) m.available = true;
+				for (const m of this.s.menu) if (!m.archived) m.available = true;
 				break;
 			}
 			case 'restoreMenu': {

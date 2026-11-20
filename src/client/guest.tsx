@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { MenuItem, Order, Perk, Snapshot } from '../shared';
-import { act, ago, chime, countdown, GUEST_KEY, Money, post, Thumb, toast, unlockAudio, useNow, useSnapshot, useStored } from './lib';
+import { act, ago, chime, countdown, FeedArt, feedText, GUEST_KEY, Illustration, Money, post, Thumb, toast, unlockAudio, useNow, useSnapshot, useStored } from './lib';
 
 export function Guest() {
 	const [token, setToken] = useStored(GUEST_KEY);
@@ -34,40 +34,46 @@ function Join({ onToken }: { onToken: (t: string) => void }) {
 	};
 	return (
 		<main class="join">
-			<h1 class="script">Inêscudos</h1>
-			<p class="lede">Party money for Inês's birthday: drinks, sweets, perks, poker.</p>
-			<form class="card" onSubmit={submit}>
-				<label>
-					Your name
-					<input value={name} onInput={e => setName(e.currentTarget.value)} maxLength={24} autoComplete="nickname" required />
-				</label>
-				<label>
-					4-digit PIN
-					<input
-						value={pin}
-						onInput={e => setPin(e.currentTarget.value.replace(/\D/g, '').slice(0, 4))}
-						inputMode="numeric"
-						pattern="\d{4}"
-						type="password"
-						autoComplete="off"
-						required
-					/>
-				</label>
-				<button class="primary" disabled={busy}>
-					{mode === 'join' ? 'Join the party' : 'Log in'}
-				</button>
-				<p class="hint">
-					{mode === 'join' ? 'Remember the PIN: you need it to log in again on another phone.' : 'Same name and PIN you joined with.'}
-				</p>
-			</form>
-			<button class="link" onClick={() => setMode(mode === 'join' ? 'login' : 'join')}>
-				{mode === 'join' ? 'Already joined? Log in' : 'New here? Join'}
+			<aside class="join-art" aria-hidden="true">
+				<Illustration name="menu-coupe" />
+			</aside>
+			<div class="join-panel">
+				<p class="eyebrow">Inês’s Cocktail Bar</p>
+				<h1>Inêscudos</h1>
+				<p class="lede">Your party wallet for drinks, food and perks.</p>
+				<form class="card" onSubmit={submit}>
+					<label>
+						Your name
+						<input value={name} onInput={e => setName(e.currentTarget.value)} maxLength={24} autoComplete="nickname" required />
+					</label>
+					<label>
+						4-digit PIN
+						<input
+							value={pin}
+							onInput={e => setPin(e.currentTarget.value.replace(/\D/g, '').slice(0, 4))}
+							inputMode="numeric"
+							pattern="\d{4}"
+							type="password"
+							autoComplete="off"
+							required
+						/>
+					</label>
+					<button class="primary" disabled={busy}>
+						{mode === 'join' ? 'Join the party' : 'Log in'}
+					</button>
+					<p class="hint">
+						{mode === 'join' ? 'Remember the PIN: you need it to log in again on another phone.' : 'Same name and PIN you joined with.'}
+					</p>
+				</form>
+				<button class="link" onClick={() => setMode(mode === 'join' ? 'login' : 'join')}>
+					{mode === 'join' ? 'Already joined? Log in' : 'New here? Join'}
 			</button>
+			</div>
 		</main>
 	);
 }
 
-type Tab = 'drinks' | 'sweets' | 'perks' | 'wallet' | 'board';
+type Tab = 'drinks' | 'food' | 'perks' | 'wallet' | 'board';
 
 function GuestHome({ snap, token, online, onLogout }: { snap: Snapshot; token: string; online: boolean; onLogout: () => void }) {
 	const [tab, setTab] = useState<Tab>('drinks');
@@ -77,7 +83,8 @@ function GuestHome({ snap, token, online, onLogout }: { snap: Snapshot; token: s
 	return (
 		<div class="app guest" onClick={unlockAudio}>
 			<header class="top">
-				<div>
+				<div class="brand"><Illustration name="menu-pianist" /><span>Inêscudos</span></div>
+				<div class="guest-account">
 					<div class="who">{me.name}</div>
 					{snap.nextPayday && <div class="payday">Payday in {countdown(snap.nextPayday, now)}</div>}
 				</div>
@@ -86,30 +93,30 @@ function GuestHome({ snap, token, online, onLogout }: { snap: Snapshot; token: s
 			{!online && <div class="offline">Reconnecting…</div>}
 			<main class="content">
 				{tab === 'drinks' && <MenuTab snap={snap} token={token} serve="bar" />}
-				{tab === 'sweets' && <MenuTab snap={snap} token={token} serve="self" />}
+				{tab === 'food' && <MenuTab snap={snap} token={token} serve="self" />}
 				{tab === 'perks' && <PerksTab snap={snap} token={token} />}
 				{tab === 'wallet' && <WalletTab snap={snap} token={token} onLogout={onLogout} />}
 				{tab === 'board' && <Board snap={snap} />}
 			</main>
-			<nav class="tabs">
+			<nav class="tabs" aria-label="Party navigation">
 				{(
 					[
-						['drinks', '🍸', 'Drinks'],
-						['sweets', '🍰', 'Sweets'],
-						['perks', '📣', 'Perks'],
-						['wallet', '👛', 'Wallet'],
-						['board', '🏆', 'Board'],
+						['drinks', 'dry-martini', 'Drinks'],
+						['food', 'chocolate-cake', 'Food'],
+						['perks', 'menu-pianist', 'Perks'],
+						['wallet', 'coins', 'Wallet'],
+						['board', 'menu-coupe', 'Board'],
 					] as const
 				).map(([id, icon, label]) => (
-					<button key={id} class={tab === id ? 'on' : ''} onClick={() => setTab(id)}>
-						<span>{icon}</span>
+					<button key={id} class={tab === id ? 'on' : ''} aria-pressed={tab === id} onClick={() => setTab(id)}>
+						<Illustration name={icon} />
 						{label}
 					</button>
 				))}
 			</nav>
 			{ready.order && (
 				<div class="ready-banner" onClick={ready.dismiss}>
-					<div class="big-emoji">🍸</div>
+					<Illustration name="dry-martini" className="ready-art" />
 					<h2>Your {ready.order.itemName} is ready!</h2>
 					<p>Go grab it from the bar.</p>
 					<button class="primary">On my way</button>
@@ -160,15 +167,33 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve: MenuItem['serve'] }) {
-	const [picked, setPicked] = useState<MenuItem | null>(null);
+	const [pickedId, setPickedId] = useState<string | null>(null);
+	const [mocktails, setMocktails] = useState(false);
+	const picked = snap.menu.find(item => item.id === pickedId);
+	const menu = snap.menu.filter(item => !item.archived && item.serve === serve &&
+		(serve === 'self' || (item.mocktail === true) === mocktails));
 	const now = useNow(30_000);
 	const active = (snap.myOrders ?? []).filter(o => o.status === 'queued' || o.status === 'making' || o.status === 'ready');
 	// server sends the queue in serving order (skip-the-queue first, then oldest)
 	const line = snap.queue.filter(q => q.status !== 'ready');
 	return (
 		<>
-			{serve === 'self' && <p class="lede small">Pay here, then help yourself at the table. Honour system: Inês is watching.</p>}
-			{serve === 'bar' && !snap.settings.barOpen && <div class="notice">The bar is closed for a moment. Sweets are still open.</div>}
+			<div class={`menu-masthead ${serve === 'self' ? 'food-masthead' : ''}`}>
+				<Illustration name={serve === 'bar' ? 'menu-coupe' : 'other-savouries'} className="menu-hero-art" />
+				<div>
+					<p class="eyebrow">Inês’s Cocktail Bar</p>
+					<h1>{serve === 'bar' ? 'Drinks Menu' : 'From the Table'}</h1>
+					{serve === 'self' && <p class="lede">Pay here, then help yourself at the table.</p>}
+					{serve === 'bar' && (
+						<div class="menu-switch" role="group" aria-label="Drinks menu">
+							<button class={!mocktails ? 'on' : ''} aria-pressed={!mocktails} onClick={() => setMocktails(false)}>Cocktails</button>
+							<button class={mocktails ? 'on' : ''} aria-pressed={mocktails} onClick={() => setMocktails(true)}>Mocktails</button>
+						</div>
+					)}
+				</div>
+				<Illustration name={serve === 'bar' ? 'menu-waiter' : 'chocolate-cake'} className="menu-side-art" />
+			</div>
+			{serve === 'bar' && !snap.settings.barOpen && <div class="notice">The bar is closed for a moment. Food is still available.</div>}
 			{serve === 'bar' && active.length > 0 && (
 				<section class="card my-orders">
 					<h3>Your orders</h3>
@@ -179,7 +204,7 @@ function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve:
 								<div>
 									<strong>{o.itemName}</strong>
 									{o.virgin && <span class="tag">mocktail</span>}
-									{o.priority && <span class="tag warn">⚡ skipped the queue</span>}
+									{o.priority && <span class="tag warn">Skipped the queue</span>}
 									<div class="sub">
 										{o.status === 'queued' && pos > 0 ? `#${pos} in line · ` : ''}
 										{ago(o.ts, now)}
@@ -196,31 +221,28 @@ function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve:
 					})}
 				</section>
 			)}
-			{groupBy(
-				snap.menu.filter(m => m.serve === serve),
-				m => m.section,
-			).map(([section, items]) => (
-				<section key={section}>
+			{groupBy(menu, m => m.section).map(([section, items]) => (
+				<section class="menu-section" key={section}>
 					<h2 class="section">{section}</h2>
 					<div class="menu-grid">
 						{items.map(it => {
 							const soldOut = !it.available || it.stock === 0;
 							return (
-								<button key={it.id} class={`item ${soldOut ? 'out' : ''}`} disabled={soldOut} onClick={() => setPicked(it)}>
-									<Thumb img={it.img} emoji={it.emoji} />
+								<button key={it.id} class={`item ${soldOut ? 'out' : ''}`} disabled={soldOut} onClick={() => setPickedId(it.id)}>
+									<Thumb img={it.img} fallback={it.serve === 'self' ? 'other-savouries' : 'dry-martini'} />
 									<div class="item-body">
 										<strong>{it.name}</strong>
 										<span class="sub">{it.desc}</span>
-										{it.stock != null && it.stock > 0 && it.stock <= 5 && <span class="tag warn">{it.stock} left</span>}
+										{it.stock != null && it.stock > 0 && <span class="tag warn">{it.stock} left</span>}
 									</div>
-									<div class="price">{soldOut ? <span class="tag">Out</span> : <Money n={it.price} />}</div>
+									<div class="price">{soldOut ? <span class="tag">Sold out</span> : <Money n={it.price} />}</div>
 								</button>
 							);
 						})}
 					</div>
 				</section>
 			))}
-			{picked && <ItemSheet item={picked} snap={snap} token={token} onClose={() => setPicked(null)} />}
+			{picked && <ItemSheet key={picked.id} item={picked} snap={snap} token={token} onClose={() => setPickedId(null)} />}
 		</>
 	);
 }
@@ -236,17 +258,19 @@ export function Sheet({ onClose, children }: { onClose: () => void; children: Co
 }
 
 function ItemSheet({ item, snap, token, onClose }: { item: MenuItem; snap: Snapshot; token: string; onClose: () => void }) {
-	const [virgin, setVirgin] = useState(false);
 	const [note, setNote] = useState('');
-	const [qty, setQty] = useState(1);
+	const [selection, setQty] = useState(1);
 	const [busy, setBusy] = useState(false);
 	const bar = item.serve === 'bar';
+	const maxQty = Math.min(20, item.stock ?? 20);
+	const qty = Math.min(selection, Math.max(1, maxQty));
+	const unavailable = !item.available || maxQty === 0;
 	const total = item.price * (bar ? 1 : qty);
 	const after = snap.me!.balance - total;
 	const submit = async () => {
 		setBusy(true);
 		const ok = bar
-			? await act(token, { type: 'order', itemId: item.id, virgin, note }, 'Ordered! You will get a ping when it is ready.')
+			? await act(token, { type: 'order', itemId: item.id, note }, 'Ordered! You will get a ping when it is ready.')
 			: await act(token, { type: 'buy', itemId: item.id, qty }, `Paid. Go grab your ${item.name}!`);
 		setBusy(false);
 		if (ok) onClose();
@@ -254,7 +278,7 @@ function ItemSheet({ item, snap, token, onClose }: { item: MenuItem; snap: Snaps
 	return (
 		<Sheet onClose={onClose}>
 			<div class="sheet-head">
-				<Thumb img={item.img} emoji={item.emoji} size={88} />
+				<Thumb img={item.img} fallback={bar ? 'dry-martini' : 'other-savouries'} size={104} />
 				<div>
 					<h2>{item.name}</h2>
 					<p class="sub">{item.desc}</p>
@@ -262,10 +286,7 @@ function ItemSheet({ item, snap, token, onClose }: { item: MenuItem; snap: Snaps
 			</div>
 			{bar ? (
 				<>
-					<label class="check">
-						<input type="checkbox" checked={virgin} onChange={e => setVirgin(e.currentTarget.checked)} />
-						Make it a mocktail
-					</label>
+					{item.mocktail && <p class="eyebrow">Alcohol-free</p>}
 					<label>
 						Note for Inês (optional)
 						<input value={note} onInput={e => setNote(e.currentTarget.value)} maxLength={120} placeholder="less sweet, extra lime…" />
@@ -273,11 +294,11 @@ function ItemSheet({ item, snap, token, onClose }: { item: MenuItem; snap: Snaps
 				</>
 			) : (
 				<div class="stepper">
-					<button class="ghost" onClick={() => setQty(Math.max(1, qty - 1))}>
+					<button class="ghost" aria-label="Decrease quantity" disabled={qty <= 1} onClick={() => setQty(qty - 1)}>
 						−
 					</button>
 					<strong>{qty}</strong>
-					<button class="ghost" onClick={() => setQty(Math.min(20, qty + 1, item.stock ?? 20))}>
+					<button class="ghost" aria-label="Increase quantity" disabled={qty >= maxQty} onClick={() => setQty(qty + 1)}>
 						+
 					</button>
 				</div>
@@ -291,8 +312,8 @@ function ItemSheet({ item, snap, token, onClose }: { item: MenuItem; snap: Snaps
 				</span>
 			</div>
 			{bar && !snap.settings.barOpen && <div class="notice">The bar is closed right now.</div>}
-			<button class="primary" disabled={busy || after < 0 || (bar && !snap.settings.barOpen)} onClick={submit}>
-				{after < 0 ? 'Not enough coins' : bar ? 'Order' : 'Pay & grab'}
+			<button class="primary" disabled={busy || unavailable || after < 0 || (bar && !snap.settings.barOpen)} onClick={submit}>
+				{unavailable ? 'Sold out' : after < 0 ? 'Not enough coins' : bar ? 'Order' : 'Pay & grab'}
 			</button>
 		</Sheet>
 	);
@@ -452,7 +473,7 @@ export function Board({ snap, compact }: { snap: Snapshot; compact?: boolean }) 
 	return (
 		<>
 			<section class="card">
-				<h3>💰 Richest right now</h3>
+				<h3>Richest right now</h3>
 				<ol class="ranks">
 					{rich.slice(0, compact ? 10 : undefined).map(p => (
 						<li key={p.id} class={p.id === meId ? 'me' : ''}>
@@ -463,7 +484,7 @@ export function Board({ snap, compact }: { snap: Snapshot; compact?: boolean }) 
 				</ol>
 			</section>
 			<section class="card">
-				<h3>🏆 Top winners</h3>
+				<h3>Top winners</h3>
 				{earners.length === 0 && <p class="sub">No prizes yet.</p>}
 				<ol class="ranks">
 					{earners.slice(0, compact ? 5 : undefined).map(p => (
@@ -491,7 +512,7 @@ export function Feed({ items, empty }: { items: Snapshot['feed']; empty: string 
 		<ul class="feed">
 			{items.map(f => (
 				<li key={f.id} class={f.kind}>
-					<span>{f.text}</span>
+					<FeedArt kind={f.kind} /><span>{feedText(f.text)}</span>
 					<time>{ago(f.ts, now)}</time>
 				</li>
 			))}

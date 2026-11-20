@@ -11,7 +11,7 @@ import {
 	type StaffOrder,
 	type TxKind,
 } from '../shared';
-import { ago, act, chime, clock, countdown, Money, post, STAFF_KEY, unlockAudio, useNow, useSnapshot, useStored, toast } from './lib';
+import { ago, act, chime, clock, countdown, Illustration, Money, post, STAFF_KEY, Thumb, unlockAudio, useNow, useSnapshot, useStored, toast } from './lib';
 import { Sheet } from './guest';
 
 type Tab = 'Bar' | 'Bank' | 'Menu' | 'Perks' | 'Players' | 'Log' | 'Settings';
@@ -60,7 +60,7 @@ export function Staff() {
 			{!online && <div class="offline">Offline. Reconnecting…</div>}
 			<header class="top">
 				<div class="row">
-					<h1 class="grow">Staff</h1>
+					<div class="brand grow"><Illustration name="menu-pianist" /><h1>Bar Staff</h1></div>
 					<span class={`st-dot ${online ? 'on' : ''}`} title={online ? 'Online' : 'Offline'} />
 					<button class="ghost small" onClick={() => setToken(null)}>
 						Log out
@@ -71,7 +71,7 @@ export function Staff() {
 						class={snap.settings.barOpen ? 'primary small' : 'danger small'}
 						onClick={() => act(token, { type: 'setBarOpen', open: !snap.settings.barOpen })}
 					>
-						{snap.settings.barOpen ? '🟢 Bar open' : '🔴 Bar closed'}
+						{snap.settings.barOpen ? 'Bar open' : 'Bar closed'}
 					</button>
 					<button
 						class="ghost small"
@@ -82,7 +82,7 @@ export function Staff() {
 							setSound(true);
 						}}
 					>
-						{sound ? '🔔 Sound on' : 'Enable sound'}
+						{sound ? 'Sound on' : 'Enable sound'}
 					</button>
 				</div>
 			</header>
@@ -121,9 +121,11 @@ function Login({ onToken }: { onToken: (t: string) => void }) {
 		setBusy(false);
 	};
 	return (
-		<div class="app staff">
+		<div class="app staff staff-entry">
 			<form class="card st-login" onSubmit={submit}>
-				<h1>Staff</h1>
+				<Illustration name="other-savouries" />
+				<p class="eyebrow">Inês’s Cocktail Bar</p>
+				<h1>Staff Entrance</h1>
 				<input
 					type="password"
 					inputMode="numeric"
@@ -156,7 +158,7 @@ function BarTab({ snap, token }: P) {
 
 	return (
 		<div class="st-bar">
-			{active.length === 0 && <p class="lede">No open orders. 🎉</p>}
+			{active.length === 0 && <p class="lede">No open orders.</p>}
 			{active.map(o => (
 				<div key={o.id} class={`card st-order ${o.status}`}>
 					<div class="row">
@@ -164,11 +166,11 @@ function BarTab({ snap, token }: P) {
 						<span class={`pill ${o.status}`}>{o.status}</span>
 					</div>
 					<div class="st-drink">
-						{itemOf(o)?.emoji ?? '🍸'} {o.itemName}
+						<Thumb img={itemOf(o)?.img} size={48} /> {o.itemName}
 					</div>
 					<div class="row st-tags">
 						{o.virgin && <span class="tag">Mocktail</span>}
-						{o.priority && <span class="tag warn">⚡ Priority</span>}
+						{o.priority && <span class="tag warn">Priority</span>}
 						<span class="sub">{ago(o.ts, now)}</span>
 					</div>
 					{o.note && <div class="st-note">“{o.note}”</div>}
@@ -225,7 +227,6 @@ function BarTab({ snap, token }: P) {
 function ChargeSheet({ snap, token, onClose }: P & { onClose: () => void }) {
 	const [pid, setPid] = useState('');
 	const [itemId, setItemId] = useState('');
-	const [virgin, setVirgin] = useState(false);
 	const [note, setNote] = useState('');
 	const [qty, setQty] = useState('1');
 	const item = snap.menu.find(m => m.id === itemId);
@@ -233,7 +234,7 @@ function ChargeSheet({ snap, token, onClose }: P & { onClose: () => void }) {
 		if (!pid || !item) return toast('Pick a player and an item', 'error');
 		const ok =
 			item.serve === 'bar'
-				? await act(token, { type: 'chargeOrder', pid, itemId, virgin, note }, 'Charged. Order is in.')
+				? await act(token, { type: 'chargeOrder', pid, itemId, note }, 'Charged. Order is in.')
 				: await act(token, { type: 'chargeItem', pid, itemId, qty: Number(qty) || 1 }, 'Charged.');
 		if (ok) onClose();
 	};
@@ -261,11 +262,11 @@ function ChargeSheet({ snap, token, onClose }: P & { onClose: () => void }) {
 					Item
 					<select value={itemId} onChange={e => setItemId(e.currentTarget.value)}>
 						<option value="">Choose…</option>
-						{groupBy(snap.menu.filter(m => m.available), m => m.section).map(([s, items]) => (
+						{groupBy(snap.menu.filter(m => m.available && m.stock !== 0), m => m.section).map(([s, items]) => (
 							<optgroup key={s} label={s}>
 								{items.map(m => (
 									<option key={m.id} value={m.id}>
-										{m.emoji} {m.name} · {m.price} Ê$
+										{m.name} · {m.price} Ê$
 									</option>
 								))}
 							</optgroup>
@@ -274,9 +275,7 @@ function ChargeSheet({ snap, token, onClose }: P & { onClose: () => void }) {
 				</label>
 				{item?.serve === 'bar' && (
 					<>
-						<label class="check">
-							<input type="checkbox" checked={virgin} onChange={e => setVirgin(e.currentTarget.checked)} /> Mocktail
-						</label>
+						{item.mocktail && <p class="eyebrow">Alcohol-free</p>}
 						<label>
 							Note
 							<input value={note} onInput={e => setNote(e.currentTarget.value)} maxLength={80} />
@@ -399,7 +398,7 @@ interface ItemDraft {
 	section: string;
 	price: string;
 	serve: 'bar' | 'self';
-	emoji: string;
+	mocktail: boolean;
 	stock: string;
 	available: boolean;
 }
@@ -410,11 +409,11 @@ const toDraft = (m: MenuItem): ItemDraft => ({
 	section: m.section,
 	price: String(m.price),
 	serve: m.serve,
-	emoji: m.emoji,
+	mocktail: m.mocktail === true,
 	stock: m.stock == null ? '' : String(m.stock),
 	available: m.available,
 });
-const blankItem: ItemDraft = { name: '', desc: '', section: '', price: '', serve: 'bar', emoji: '', stock: '', available: true };
+const blankItem: ItemDraft = { name: '', desc: '', section: '', price: '', serve: 'bar', mocktail: false, stock: '', available: true };
 
 function ItemForm({
 	init,
@@ -439,7 +438,7 @@ function ItemForm({
 		if (stock !== null && !Number.isInteger(stock)) return toast('Stock must be a whole number', 'error');
 		const ok = await act(
 			token,
-			{ type: 'saveItem', item: { id: d.id, name: d.name, desc: d.desc, section: d.section, price, serve: d.serve, emoji: d.emoji, stock, available: d.available } },
+			{ type: 'saveItem', item: { id: d.id, name: d.name, desc: d.desc, section: d.section, price, serve: d.serve, mocktail: d.mocktail, stock, available: d.available } },
 			'Saved',
 		);
 		if (ok) onDone(true);
@@ -462,7 +461,9 @@ function ItemForm({
 				</select>
 			</div>
 			<div class="row">
-				<input placeholder="Emoji" value={d.emoji} onInput={e => set('emoji', e.currentTarget.value)} />
+				{d.serve === 'bar' && <label class="check">
+					<input type="checkbox" checked={d.mocktail} onChange={e => set('mocktail', e.currentTarget.checked)} /> Mocktail
+				</label>}
 				<input inputMode="numeric" placeholder="Stock (blank = ∞)" value={d.stock} onInput={e => set('stock', e.currentTarget.value)} />
 			</div>
 			<label class="check">
@@ -483,9 +484,10 @@ function ItemForm({
 function MenuTab({ snap, token }: P) {
 	const [editing, setEditing] = useState<string | null>(null);
 	const [adding, setAdding] = useState(false);
-	const sections = [...new Set(snap.menu.map(m => m.section))];
-	const setStock = (m: MenuItem, stock: number | null) =>
-		act(token, { type: 'saveItem', item: { ...m, stock } });
+	const menu = snap.menu.filter(m => !m.archived);
+	const sections = [...new Set(menu.map(m => m.section))];
+	const adjustStock = (m: MenuItem, delta: number) =>
+		act(token, { type: 'adjustStock', itemId: m.id, delta });
 	return (
 		<div>
 			{adding ? (
@@ -498,14 +500,15 @@ function MenuTab({ snap, token }: P) {
 					+ Add item
 				</button>
 			)}
-			{groupBy(snap.menu, m => m.section).map(([section, items]) => (
+			{groupBy(menu, m => m.section).map(([section, items]) => (
 				<section key={section}>
 					<h3 class="section">{section}</h3>
 					{items.map(m => (
 						<div key={m.id} class={`card st-item ${m.available ? '' : 'off'}`}>
 							<div class="row">
+								<Thumb img={m.img} size={44} fallback={m.serve === 'self' ? 'other-savouries' : 'dry-martini'} />
 								<span class="grow">
-									{m.emoji} <strong>{m.name}</strong>
+									<strong>{m.name}</strong>
 									<br />
 									<span class="sub">
 										{m.price} Ê$ · {m.serve === 'bar' ? 'bar' : 'self-serve'}
@@ -513,15 +516,15 @@ function MenuTab({ snap, token }: P) {
 									</span>
 								</span>
 								<div class="stepper">
-									<button onClick={() => setStock(m, Math.max(0, (m.stock ?? 0) - 1))} disabled={m.stock == null}>
+									<button onClick={() => adjustStock(m, -1)} disabled={!m.stock} aria-label={`Remove one ${m.name} from stock`}>
 										−
 									</button>
 									<span>{m.stock == null ? '∞' : m.stock}</span>
-									<button onClick={() => setStock(m, (m.stock ?? 0) + 1)}>+</button>
+									<button onClick={() => adjustStock(m, 1)} aria-label={`Add one ${m.name} to stock`}>+</button>
 								</div>
 							</div>
 							<div class="row">
-								<button class="ghost small" onClick={() => act(token, { type: 'saveItem', item: { ...m, available: !m.available } })}>
+								<button class="ghost small" onClick={() => act(token, { type: 'setItemAvailability', itemId: m.id, available: !m.available })}>
 									{m.available ? 'Hide' : 'Show'}
 								</button>
 								<button class="ghost small" onClick={() => setEditing(editing === m.id ? null : m.id)}>

@@ -1,15 +1,9 @@
 import qrcode from 'qrcode-generator';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { FeedItem, PublicPlayer } from '../shared';
-import { chime, clock, countdown, Money, unlockAudio, useNow, useSnapshot } from './lib';
+import { chime, clock, countdown, FeedArt, feedText, Illustration, Money, unlockAudio, useNow, useSnapshot } from './lib';
 
 const ANNOUNCE: FeedItem['kind'][] = ['perk', 'payday', 'prize'];
-/** Server feed texts always start with "<emoji> "; split it off to show it large. */
-const splitIcon = (text: string) => {
-	const i = text.indexOf(' ');
-	return { icon: text.slice(0, i), body: text.slice(i + 1) };
-};
-
 function Rank({ title, players, field }: { title: string; players: PublicPlayer[]; field: 'balance' | 'earned' }) {
 	const list = players
 		.filter(p => field === 'balance' || p.earned > 0)
@@ -98,7 +92,7 @@ export function Tv() {
 	return (
 		<div class="tv">
 			<header>
-				<div class="script">Inêscudos</div>
+				<div class="brand"><Illustration name="menu-coupe" /><span>Inêscudos</span></div>
 				<div class={'bar-status ' + (snap.settings.barOpen ? 'open' : 'closed')}>
 					Bar {snap.settings.barOpen ? 'open' : 'closed'}
 				</div>
@@ -147,7 +141,7 @@ export function Tv() {
 						<ul class="small">
 							{queued.slice(0, 8).map((q) => (
 								<li key={q.id}>
-									{q.priority && '⚡ '}
+									{q.priority && <span class="tv-priority">Priority · </span>}
 									<b>{q.pname}</b> <span>{q.itemName}</span>
 								</li>
 							))}
@@ -162,7 +156,7 @@ export function Tv() {
 						<ul class="feed">
 							{feed.map((f) => (
 								<li key={f.id} class={f.kind}>
-									<span>{f.text}</span>
+									<FeedArt kind={f.kind} /><span>{feedText(f.text)}</span>
 									<time>{clock(f.ts)}</time>
 								</li>
 							))}
@@ -182,8 +176,8 @@ export function Tv() {
 			{shown && (
 				<div class="announce" key={shown.id}>
 					<div class={'card ' + shown.kind}>
-						<i>{splitIcon(shown.text).icon}</i>
-						<p>{splitIcon(shown.text).body}</p>
+						<FeedArt kind={shown.kind} />
+						<p>{feedText(shown.text)}</p>
 					</div>
 				</div>
 			)}

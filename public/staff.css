@@ -1,8 +1,8 @@
 .staff .st-dot { width: 12px; height: 12px; border-radius: 50%; background: #b33; display: inline-block; }
-.staff .st-dot.on { background: #2e9b4e; }
+.staff .st-dot.on { background: var(--dark); }
 .staff .st-head { gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .staff .st-login { display: grid; gap: 12px; margin-top: 20vh; }
-.staff input, .staff select { font: inherit; padding: 12px; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: inherit; min-width: 0; width: 100%; box-sizing: border-box; }
+.staff input, .staff select { font: inherit; padding: 12px; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); color: inherit; min-width: 0; width: 100%; box-sizing: border-box; }
 .staff input[type=checkbox] { width: auto; min-height: 0; }
 .staff button { min-height: 44px; }
 .staff .staff-form { display: grid; gap: 10px; }
@@ -12,7 +12,7 @@
 .staff .st-bar, .staff .st-bank { display: grid; gap: 12px; }
 .staff .st-order { display: grid; gap: 8px; border-left: 6px solid var(--gold); }
 .staff .st-order.making { border-left-color: var(--ink); }
-.staff .st-order.ready { border-left-color: #2e9b4e; }
+.staff .st-order.ready { border-left-color: var(--dark); }
 .staff .st-who { font-size: 20px; }
 .staff .st-drink { font-family: var(--serif); font-size: 24px; }
 .staff .st-tags { gap: 8px; flex-wrap: wrap; }
@@ -20,7 +20,7 @@
 .staff .st-btns { display: flex; gap: 8px; }
 .staff .st-btns button { flex: 1; min-height: 52px; font-size: 17px; }
 .staff .st-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.staff .st-chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 8px 14px; color: inherit; }
+.staff .st-chip { border: 1px solid var(--line); background: var(--card); border-radius: var(--radius); padding: 8px 14px; color: inherit; }
 .staff .st-chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
 .staff .st-chip small { opacity: .75; margin-left: 4px; }
 .staff .st-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -32,3 +32,23 @@
 .staff .st-log { padding: 8px 0; }
 .staff .st-danger { border-color: var(--ink); }
 .staff .st-amt { max-width: 45%; }
+
+.staff .content { max-width: 920px; }
+.staff .top { align-items: center; }
+.staff .top > .row:first-child { flex: 1; }
+.staff .st-login { text-align: center; width: min(24rem, calc(100vw - 2rem)); margin: 0; border: 3px double var(--line); padding: 1.5rem; }
+.staff .st-login > .illustration { width: 110px; height: 84px; margin: 0 auto; }
+.staff .st-login h1 { font: 900 2rem/1 var(--serif); }
+.staff-entry { display: grid; place-items: center; padding: 1rem; min-height: 100svh; }
+.staff .st-drink { display: flex; align-items: center; gap: .8rem; font-weight: 600; }
+.staff .st-note { background: #ead6b7; border-radius: var(--radius); }
+.staff .st-dot { background: var(--ink); border-radius: 0; transform: rotate(45deg); width: 8px; height: 8px; }
+.staff .st-dot.on { background: var(--dark); }
+.staff .st-order.ready { border-left-color: var(--dark); }
+.staff .tabs button { min-width: 0; font-size: clamp(.8rem, 3.2vw, .96rem); }
+@media (max-width: 615px) {
+	.staff .top { display: grid; gap: .3rem; }
+	.staff .st-head { margin-top: 0; }
+}
+
+.staff .st-head .primary { width: auto; }
