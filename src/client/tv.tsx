@@ -12,7 +12,7 @@ function Rank({ title, players, field }: { title: string; players: PublicPlayer[
 	return (
 		<section class="tv-box">
 			<h2>{title}</h2>
-			{list.length === 0 && <p class="tv-empty">No prizes yet. Win a quiz!</p>}
+			{list.length === 0 && <p class="tv-empty">No prizes yet.</p>}
 			<ol>
 				{list.map((p, i) => (
 					<li key={p.id}>
@@ -108,14 +108,14 @@ export function Tv() {
 
 			<main>
 				<div class="col">
-					<Rank title="Richest" players={snap.players} field="balance" />
-					<Rank title="Top winners" players={snap.players} field="earned" />
+					<Rank title="Top balances" players={snap.players} field="balance" />
+					<Rank title="Prize leaders" players={snap.players} field="earned" />
 				</div>
 
 				<div class="col">
 					<section class="tv-box ready">
-						<h2>Ready — come grab it</h2>
-						{ready.length === 0 && <p class="none">Nothing waiting</p>}
+						<h2>Ready for collection</h2>
+						{ready.length === 0 && <p class="none">No orders ready</p>}
 						<ul>
 							{ready.slice(0, 5).map((q) => (
 								<li key={q.id}>
@@ -152,7 +152,7 @@ export function Tv() {
 
 				<div class="col">
 					<section class="tv-box grow">
-						<h2>What's happening</h2>
+						<h2>Activity</h2>
 						<ul class="feed">
 							{feed.map((f) => (
 								<li key={f.id} class={f.kind}>
@@ -168,7 +168,7 @@ export function Tv() {
 			<footer>
 				<div class="qr" dangerouslySetInnerHTML={{ __html: qrSvg }} />
 				<div>Scan to join · {location.host}</div>
-				{!sound && <small>click to enable sound</small>}
+				{!sound && <button class="ghost small" type="button">Enable sound</button>}
 			</footer>
 
 			{!online && <div class="offline-badge">Reconnecting…</div>}

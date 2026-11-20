@@ -4,6 +4,7 @@ import {
 	defaultState,
 	MENU_REVISION,
 	refreshMenu,
+	refreshPerkNames,
 	TX_KINDS,
 	type FeedItem,
 	type LogGroup,
@@ -92,10 +93,16 @@ export class Party extends DurableObject<Env> {
 		ctx.blockConcurrencyWhile(async () => {
 			const stored = await ctx.storage.get<State>('state');
 			this.s = { ...defaultState(), ...stored };
-			if (stored && (stored.menuRevision ?? 0) < MENU_REVISION) {
-				this.s.menu = refreshMenu(this.s.menu);
-				this.s.menuRevision = MENU_REVISION;
-				await ctx.storage.put('state', this.s);
+			if (stored) {
+				const olderMenu = (stored.menuRevision ?? 0) < MENU_REVISION;
+				const perks = refreshPerkNames(this.s.perks);
+				const renamedPerks = perks.some((perk, index) => perk !== this.s.perks[index]);
+				if (olderMenu) {
+					this.s.menu = refreshMenu(this.s.menu);
+					this.s.menuRevision = MENU_REVISION;
+				}
+				this.s.perks = perks;
+				if (olderMenu || renamedPerks) await ctx.storage.put('state', this.s);
 			}
 			if (this.s.settings.autoPayday && (await ctx.storage.getAlarm()) == null) await this.schedule();
 		});
@@ -187,10 +194,10 @@ export class Party extends DurableObject<Env> {
 	}
 
 	private createPlayer(id: string, name: string, pinHash: string): string {
-		if (this.findByName(name)) throw new HttpError(`"${name}" is taken. Log in instead, or pick another name.`);
+		if (this.findByName(name)) throw new HttpError(`"${name}" is taken. Log in or use another name.`);
 		this.s.players[id] = { id, name, pinHash, joinedAt: Date.now() };
 		this.addTx([{ pid: id, amt: this.s.settings.startBalance }], 'start', 'Welcome money');
-		this.feed(`${name} joined the party`, 'info');
+		this.feed(`${name} joined`, 'info');
 		return id;
 	}
 
@@ -207,7 +214,7 @@ export class Party extends DurableObject<Env> {
 
 	private async staffLogin(body: Body) {
 		const expected = this.env.STAFF_PIN;
-		if (!expected) throw new HttpError('STAFF_PIN is not configured on the server', 500);
+		if (!expected) throw new HttpError('Staff sign-in is unavailable', 500);
 		if (typeof body.pin !== 'string' || body.pin !== expected) throw new HttpError('Wrong staff PIN', 401);
 		const token = crypto.randomUUID();
 		this.s.staffTokens.push(token);
@@ -283,11 +290,11 @@ export class Party extends DurableObject<Env> {
 			'payday',
 			'Payday',
 		);
-		this.feed(`Payday! Everyone +${amt} Ê$`, 'payday');
+		this.feed(`Payday · +${amt} Ê$ each`, 'payday');
 	}
 
 	private takeStock(item: MenuItem, qty: number): void {
-		if (!item.available) throw new HttpError(`${item.name} is not available right now`);
+		if (!item.available) throw new HttpError(`${item.name} is unavailable`);
 		if (item.stock != null) {
 			if (item.stock < qty) throw new HttpError(item.stock === 0 ? `${item.name} is sold out` : `Only ${item.stock} ${item.name} left`);
 			item.stock -= qty;
@@ -339,7 +346,7 @@ export class Party extends DurableObject<Env> {
 			const me = this.s.players[pid]!;
 			switch (type) {
 				case 'order': {
-					if (!this.s.settings.barOpen) throw new HttpError('The bar is closed right now');
+					if (!this.s.settings.barOpen) throw new HttpError('Bar closed');
 					const active = this.s.orders.filter(o => o.pid === pid && ACTIVE.includes(o.status)).length;
 					if (active >= this.s.settings.maxActiveOrders)
 						throw new HttpError(`You already have ${active} drinks in the queue`);
@@ -349,7 +356,7 @@ export class Party extends DurableObject<Env> {
 				case 'cancelOrder': {
 					const o = this.order(body.orderId);
 					if (o.pid !== pid) throw new HttpError('Not your order', 403);
-					if (o.status !== 'queued') throw new HttpError('Too late, Inês is already on it');
+					if (o.status !== 'queued') throw new HttpError('Only queued orders can be cancelled');
 					o.status = 'cancelled';
 					o.updatedAt = Date.now();
 					this.refundOrder(o);
@@ -368,11 +375,11 @@ export class Party extends DurableObject<Env> {
 					const perk = this.s.perks.find(p => p.id === body.perkId);
 					if (!perk) throw new HttpError('Unknown perk');
 					const target = perk.needsTarget ? this.player(body.target) : null;
-					if (target?.id === pid) throw new HttpError('Pick someone else');
+					if (target?.id === pid) throw new HttpError('Select another guest');
 					this.requireFunds(pid, perk.price);
 					if (perk.effect === 'skipQueue') {
 						const mine = this.s.orders.find(o => o.pid === pid && o.status === 'queued' && !o.priority);
-						if (!mine) throw new HttpError('Order a drink first, then skip the queue with it');
+						if (!mine) throw new HttpError('A queued drink order is required');
 						mine.priority = true;
 						mine.updatedAt = Date.now();
 					}
@@ -416,7 +423,7 @@ export class Party extends DurableObject<Env> {
 				o.updatedAt = Date.now();
 				if (status === 'cancelled') this.refundOrder(o);
 				if (status === 'ready')
-					this.feed(`${this.s.players[o.pid]?.name ?? '?'}, your ${o.itemName} is ready!`, 'ready');
+					this.feed(`${o.itemName} ready for ${this.s.players[o.pid]?.name ?? 'guest'}`, 'ready');
 				break;
 			}
 			case 'chargeOrder': {
@@ -434,7 +441,7 @@ export class Party extends DurableObject<Env> {
 			}
 			case 'setBarOpen': {
 				this.s.settings.barOpen = body.open === true;
-				this.feed(this.s.settings.barOpen ? 'The bar is open' : 'The bar is closed for a bit', 'info');
+				this.feed(this.s.settings.barOpen ? 'Bar open' : 'Bar closed', 'info');
 				break;
 			}
 			case 'grant': {
@@ -461,7 +468,7 @@ export class Party extends DurableObject<Env> {
 				break;
 			}
 			case 'payday': {
-				if (!this.activePlayers().length) throw new HttpError('Nobody has joined yet');
+				if (!this.activePlayers().length) throw new HttpError('No players yet');
 				this.payday();
 				break;
 			}

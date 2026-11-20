@@ -277,15 +277,31 @@ export function refreshMenu(previous: MenuItem[]): MenuItem[] {
 export const DEFAULT_PERKS: Perk[] = [
 	{ id: 'skip-queue', name: 'Skip the drinks queue', price: 15, needsTarget: false, effect: 'skipQueue' },
 	{ id: 'karaoke-jump', name: 'Jump the karaoke queue', price: 10, needsTarget: false, effect: 'none' },
-	{ id: 'mic-moment', name: 'Mic moment: a toast or dedication', price: 5, needsTarget: false, effect: 'none' },
+	{ id: 'mic-moment', name: 'Make a toast or dedication', price: 5, needsTarget: false, effect: 'none' },
 	{ id: 'pick-song', name: "Pick someone's next song", price: 15, needsTarget: true, effect: 'none' },
-	{ id: 'song-veto', name: 'Veto the current song', price: 15, needsTarget: false, effect: 'none' },
-	{ id: 'force-duet', name: 'Force someone into a duet with you', price: 20, needsTarget: true, effect: 'none' },
-	{ id: 'force-solo', name: 'Make someone sing solo', price: 25, needsTarget: true, effect: 'none' },
+	{ id: 'song-veto', name: 'Skip the current song', price: 15, needsTarget: false, effect: 'none' },
+	{ id: 'force-duet', name: 'Choose a duet partner', price: 20, needsTarget: true, effect: 'none' },
+	{ id: 'force-solo', name: 'Choose a solo singer', price: 25, needsTarget: true, effect: 'none' },
 	{ id: 'quiz-category', name: 'Pick the next quiz category', price: 10, needsTarget: false, effect: 'none' },
 	{ id: 'quiz-5050', name: 'Quiz 50/50: remove two wrong answers', price: 15, needsTarget: false, effect: 'none' },
-	{ id: 'steal-question', name: "Steal another team's quiz question", price: 20, needsTarget: false, effect: 'none' },
+	{ id: 'steal-question', name: "Take another team's quiz question", price: 20, needsTarget: false, effect: 'none' },
 ];
+
+const PREVIOUS_PERK_NAMES: Readonly<Record<string, string>> = {
+	'mic-moment': 'Mic moment: a toast or dedication',
+	'song-veto': 'Veto the current song',
+	'force-duet': 'Force someone into a duet with you',
+	'force-solo': 'Make someone sing solo',
+	'steal-question': "Steal another team's quiz question",
+};
+
+export function refreshPerkNames(perks: Perk[]): Perk[] {
+	return perks.map(perk => {
+		if (perk.name !== PREVIOUS_PERK_NAMES[perk.id]) return perk;
+		const current = DEFAULT_PERKS.find(item => item.id === perk.id);
+		return current ? { ...perk, name: current.name } : perk;
+	});
+}
 
 export const DEFAULT_ACTIONS: QuickAction[] = [
 	{ id: 'quiz1', label: 'Quiz 1st', amount: 30, kind: 'prize' },

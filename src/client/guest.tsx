@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { MenuItem, Order, Perk, Snapshot } from '../shared';
-import { act, ago, chime, countdown, FeedArt, feedText, GUEST_KEY, Illustration, Money, post, Thumb, toast, unlockAudio, useNow, useSnapshot, useStored } from './lib';
+import { act, ago, chime, clock, countdown, FeedArt, feedText, GUEST_KEY, Illustration, Money, post, Thumb, toast, unlockAudio, useNow, useSnapshot, useStored } from './lib';
 
 export function Guest() {
 	const [token, setToken] = useStored(GUEST_KEY);
@@ -40,7 +40,6 @@ function Join({ onToken }: { onToken: (t: string) => void }) {
 			<div class="join-panel">
 				<p class="eyebrow">Inês’s Cocktail Bar</p>
 				<h1>Inêscudos</h1>
-				<p class="lede">Your party wallet for drinks, food and perks.</p>
 				<form class="card" onSubmit={submit}>
 					<label>
 						Your name
@@ -59,15 +58,13 @@ function Join({ onToken }: { onToken: (t: string) => void }) {
 						/>
 					</label>
 					<button class="primary" disabled={busy}>
-						{mode === 'join' ? 'Join the party' : 'Log in'}
+						{mode === 'join' ? 'Join' : 'Log in'}
 					</button>
-					<p class="hint">
-						{mode === 'join' ? 'Remember the PIN: you need it to log in again on another phone.' : 'Same name and PIN you joined with.'}
-					</p>
+					{mode === 'join' && <p class="hint">Keep your PIN to sign in again.</p>}
 				</form>
 				<button class="link" onClick={() => setMode(mode === 'join' ? 'login' : 'join')}>
-					{mode === 'join' ? 'Already joined? Log in' : 'New here? Join'}
-			</button>
+					{mode === 'join' ? 'Log in' : 'Join'}
+				</button>
 			</div>
 		</main>
 	);
@@ -98,7 +95,7 @@ function GuestHome({ snap, token, online, onLogout }: { snap: Snapshot; token: s
 				{tab === 'wallet' && <WalletTab snap={snap} token={token} onLogout={onLogout} />}
 				{tab === 'board' && <Board snap={snap} />}
 			</main>
-			<nav class="tabs" aria-label="Party navigation">
+			<nav class="tabs" aria-label="Navigation">
 				{(
 					[
 						['drinks', 'dry-martini', 'Drinks'],
@@ -117,9 +114,9 @@ function GuestHome({ snap, token, online, onLogout }: { snap: Snapshot; token: s
 			{ready.order && (
 				<div class="ready-banner" onClick={ready.dismiss}>
 					<Illustration name="dry-martini" className="ready-art" />
-					<h2>Your {ready.order.itemName} is ready!</h2>
-					<p>Go grab it from the bar.</p>
-					<button class="primary">On my way</button>
+					<h2>{ready.order.itemName} is ready</h2>
+					<p>Collect it at the bar.</p>
+					<button class="primary">Dismiss</button>
 				</div>
 			)}
 		</div>
@@ -161,7 +158,7 @@ function groupBy<T>(list: T[], key: (t: T) => string): [string, T[]][] {
 const STATUS_LABEL: Record<string, string> = {
 	queued: 'In line',
 	making: 'Being made',
-	ready: 'Ready!',
+	ready: 'Ready',
 	done: 'Collected',
 	cancelled: 'Cancelled',
 };
@@ -182,8 +179,8 @@ function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve:
 				<Illustration name={serve === 'bar' ? 'menu-coupe' : 'other-savouries'} className="menu-hero-art" />
 				<div>
 					<p class="eyebrow">Inês’s Cocktail Bar</p>
-					<h1>{serve === 'bar' ? 'Drinks Menu' : 'From the Table'}</h1>
-					{serve === 'self' && <p class="lede">Pay here, then help yourself at the table.</p>}
+					<h1>{serve === 'bar' ? 'Drinks' : 'Food'}</h1>
+					{serve === 'self' && <p class="lede">Self-service. Pay before collecting.</p>}
 					{serve === 'bar' && (
 						<div class="menu-switch" role="group" aria-label="Drinks menu">
 							<button class={!mocktails ? 'on' : ''} aria-pressed={!mocktails} onClick={() => setMocktails(false)}>Cocktails</button>
@@ -193,7 +190,7 @@ function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve:
 				</div>
 				<Illustration name={serve === 'bar' ? 'menu-waiter' : 'chocolate-cake'} className="menu-side-art" />
 			</div>
-			{serve === 'bar' && !snap.settings.barOpen && <div class="notice">The bar is closed for a moment. Food is still available.</div>}
+			{serve === 'bar' && !snap.settings.barOpen && <div class="notice">Bar closed. Food is still available.</div>}
 			{serve === 'bar' && active.length > 0 && (
 				<section class="card my-orders">
 					<h3>Your orders</h3>
@@ -204,7 +201,7 @@ function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve:
 								<div>
 									<strong>{o.itemName}</strong>
 									{o.virgin && <span class="tag">mocktail</span>}
-									{o.priority && <span class="tag warn">Skipped the queue</span>}
+									{o.priority && <span class="tag warn">Priority</span>}
 									<div class="sub">
 										{o.status === 'queued' && pos > 0 ? `#${pos} in line · ` : ''}
 										{ago(o.ts, now)}
@@ -270,8 +267,8 @@ function ItemSheet({ item, snap, token, onClose }: { item: MenuItem; snap: Snaps
 	const submit = async () => {
 		setBusy(true);
 		const ok = bar
-			? await act(token, { type: 'order', itemId: item.id, note }, 'Ordered! You will get a ping when it is ready.')
-			: await act(token, { type: 'buy', itemId: item.id, qty }, `Paid. Go grab your ${item.name}!`);
+			? await act(token, { type: 'order', itemId: item.id, note }, 'Order placed')
+			: await act(token, { type: 'buy', itemId: item.id, qty }, 'Paid');
 		setBusy(false);
 		if (ok) onClose();
 	};
@@ -288,8 +285,8 @@ function ItemSheet({ item, snap, token, onClose }: { item: MenuItem; snap: Snaps
 				<>
 					{item.mocktail && <p class="eyebrow">Alcohol-free</p>}
 					<label>
-						Note for Inês (optional)
-						<input value={note} onInput={e => setNote(e.currentTarget.value)} maxLength={120} placeholder="less sweet, extra lime…" />
+						Order note (optional)
+						<input value={note} onInput={e => setNote(e.currentTarget.value)} maxLength={120} />
 					</label>
 				</>
 			) : (
@@ -308,12 +305,12 @@ function ItemSheet({ item, snap, token, onClose }: { item: MenuItem; snap: Snaps
 					Total <Money n={total} />
 				</span>
 				<span class={after < 0 ? 'neg' : 'sub'}>
-					Left after: <Money n={after} />
+					Balance after <Money n={after} />
 				</span>
 			</div>
-			{bar && !snap.settings.barOpen && <div class="notice">The bar is closed right now.</div>}
+			{bar && !snap.settings.barOpen && <div class="notice">Bar closed</div>}
 			<button class="primary" disabled={busy || unavailable || after < 0 || (bar && !snap.settings.barOpen)} onClick={submit}>
-				{unavailable ? 'Sold out' : after < 0 ? 'Not enough coins' : bar ? 'Order' : 'Pay & grab'}
+				{unavailable ? 'Sold out' : after < 0 ? 'Not enough coins' : bar ? 'Order' : 'Pay'}
 			</button>
 		</Sheet>
 	);
@@ -323,14 +320,12 @@ function PerksTab({ snap, token }: { snap: Snapshot; token: string }) {
 	const [picked, setPicked] = useState<Perk | null>(null);
 	return (
 		<>
-			<p class="lede small">Buy a perk and it gets announced on the big screen. No refunds, no mercy.</p>
+			<p class="sub">Perks appear on the TV screen. All perk purchases are final.</p>
 			<div class="list">
 				{snap.perks.map(p => (
 					<button key={p.id} class="item perk" onClick={() => setPicked(p)}>
 						<div class="item-body">
 							<strong>{p.name}</strong>
-							{p.needsTarget && <span class="sub">Pick a victim</span>}
-							{p.effect === 'skipQueue' && <span class="sub">Your queued drink jumps to the front</span>}
 						</div>
 						<div class="price">
 							<Money n={p.price} />
@@ -338,8 +333,8 @@ function PerksTab({ snap, token }: { snap: Snapshot; token: string }) {
 					</button>
 				))}
 			</div>
-			<h2 class="section">Recent</h2>
-			<Feed items={snap.feed.filter(f => f.kind === 'perk').slice(0, 10)} empty="Nobody has bought a perk yet." />
+			<h2 class="section">Recent perks</h2>
+			<Feed items={snap.feed.filter(f => f.kind === 'perk').slice(0, 10)} empty="No perks used yet." />
 			{picked && <PerkSheet perk={picked} snap={snap} token={token} onClose={() => setPicked(null)} />}
 		</>
 	);
@@ -353,12 +348,12 @@ function PerkSheet({ perk, snap, token, onClose }: { perk: Perk; snap: Snapshot;
 	return (
 		<Sheet onClose={onClose}>
 			<h2>{perk.name}</h2>
-			{perk.effect === 'skipQueue' && <p class="sub">Moves the drink you have waiting in line to the front of Inês's queue. Order the drink first.</p>}
+			{perk.effect === 'skipQueue' && <p class="sub">Place a drink order first.</p>}
 			{perk.needsTarget && (
 				<label>
-					Who?
+					Guest
 					<select value={target} onChange={e => setTarget(e.currentTarget.value)}>
-						<option value="">Choose someone…</option>
+						<option value="">Select a guest</option>
 						{others.map(p => (
 							<option key={p.id} value={p.id}>
 								{p.name}
@@ -372,7 +367,7 @@ function PerkSheet({ perk, snap, token, onClose }: { perk: Perk; snap: Snapshot;
 					Price <Money n={perk.price} />
 				</span>
 				<span class={after < 0 ? 'neg' : 'sub'}>
-					Left after: <Money n={after} />
+					Balance after <Money n={after} />
 				</span>
 			</div>
 			<button
@@ -380,7 +375,7 @@ function PerkSheet({ perk, snap, token, onClose }: { perk: Perk; snap: Snapshot;
 				disabled={busy || after < 0 || (perk.needsTarget && !target)}
 				onClick={async () => {
 					setBusy(true);
-					const ok = await act(token, { type: 'buyPerk', perkId: perk.id, target }, 'Done. It is on the big screen.');
+					const ok = await act(token, { type: 'buyPerk', perkId: perk.id, target }, 'Perk purchased');
 					setBusy(false);
 					if (ok) onClose();
 				}}
@@ -398,28 +393,25 @@ function WalletTab({ snap, token, onLogout }: { snap: Snapshot; token: string; o
 	const others = snap.players.filter(p => p.id !== snap.me!.id).sort((a, b) => a.name.localeCompare(b.name));
 	const send = async (e: Event) => {
 		e.preventDefault();
-		if (await act(token, { type: 'transfer', to, amount: Number(amount), note }, 'Sent!')) {
+		if (await act(token, { type: 'transfer', to, amount: Number(amount), note }, 'Coins sent')) {
 			setAmount('');
 			setNote('');
 		}
 	};
 	return (
 		<>
-			<section class="card">
-				<h3>Earn more</h3>
-				<p class="sub">
-					Payday: +{snap.settings.paydayAmount} Ê$ every hour
-					{snap.settings.paydayHours.length ? ` (${[...snap.settings.paydayHours].sort((a, b) => ((a + 12) % 24) - ((b + 12) % 24)).map(h => `${h}h`).join(', ')})` : ''}.
-					Win quizzes, karaoke and games. Bring candy or cigarettes to the bank to swap them for coins.
-				</p>
-			</section>
+			{snap.nextPayday != null && (
+				<section class="card">
+					<h3>Next payday</h3>
+					<p class="sub">{clock(snap.nextPayday)} · +{snap.settings.paydayAmount} Ê$</p>
+				</section>
+			)}
 			<form class="card" onSubmit={send}>
 				<h3>Send coins</h3>
-				<p class="sub">Settle a bet, pay a friend back, buy someone a drink.</p>
 				<label>
 					To
 					<select value={to} onChange={e => setTo(e.currentTarget.value)} required>
-						<option value="">Choose someone…</option>
+						<option value="">Select a guest</option>
 						{others.map(p => (
 							<option key={p.id} value={p.id}>
 								{p.name}
@@ -434,7 +426,7 @@ function WalletTab({ snap, token, onLogout }: { snap: Snapshot; token: string; o
 					</label>
 					<label class="grow">
 						Note
-						<input value={note} onInput={e => setNote(e.currentTarget.value)} maxLength={60} placeholder="lost the bet" />
+						<input value={note} onInput={e => setNote(e.currentTarget.value)} maxLength={60} />
 					</label>
 				</div>
 				<button class="primary" disabled={!to || !amount}>
@@ -443,7 +435,7 @@ function WalletTab({ snap, token, onLogout }: { snap: Snapshot; token: string; o
 			</form>
 			<section class="card">
 				<h3>History</h3>
-				{(snap.myTx ?? []).length === 0 && <p class="sub">Nothing yet.</p>}
+				{(snap.myTx ?? []).length === 0 && <p class="sub">No transactions.</p>}
 				{(snap.myTx ?? []).map(t => (
 					<div key={t.id} class={`tx ${t.undone ? 'undone' : ''}`}>
 						<span>{t.reason}</span>
@@ -457,7 +449,7 @@ function WalletTab({ snap, token, onLogout }: { snap: Snapshot; token: string; o
 			<button
 				class="link"
 				onClick={() => {
-					if (confirm('Log out? You will need your name and PIN to get back in.')) onLogout();
+					if (confirm('Log out? Use your name and PIN to sign in again.')) onLogout();
 				}}
 			>
 				Log out
@@ -473,7 +465,7 @@ export function Board({ snap, compact }: { snap: Snapshot; compact?: boolean }) 
 	return (
 		<>
 			<section class="card">
-				<h3>Richest right now</h3>
+				<h3>Top balances</h3>
 				<ol class="ranks">
 					{rich.slice(0, compact ? 10 : undefined).map(p => (
 						<li key={p.id} class={p.id === meId ? 'me' : ''}>
@@ -484,7 +476,7 @@ export function Board({ snap, compact }: { snap: Snapshot; compact?: boolean }) 
 				</ol>
 			</section>
 			<section class="card">
-				<h3>Top winners</h3>
+				<h3>Prize leaders</h3>
 				{earners.length === 0 && <p class="sub">No prizes yet.</p>}
 				<ol class="ranks">
 					{earners.slice(0, compact ? 5 : undefined).map(p => (
@@ -497,8 +489,8 @@ export function Board({ snap, compact }: { snap: Snapshot; compact?: boolean }) 
 			</section>
 			{!compact && (
 				<>
-					<h2 class="section">What's happening</h2>
-					<Feed items={snap.feed} empty="Quiet so far." />
+					<h2 class="section">Activity</h2>
+					<Feed items={snap.feed} empty="No activity yet." />
 				</>
 			)}
 		</>

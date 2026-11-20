@@ -125,7 +125,7 @@ function Login({ onToken }: { onToken: (t: string) => void }) {
 			<form class="card st-login" onSubmit={submit}>
 				<Illustration name="other-savouries" />
 				<p class="eyebrow">Inês’s Cocktail Bar</p>
-				<h1>Staff Entrance</h1>
+				<h1>Staff sign-in</h1>
 				<input
 					type="password"
 					inputMode="numeric"
@@ -192,7 +192,7 @@ function BarTab({ snap, token }: P) {
 						)}
 						<button
 							class="ghost danger"
-							onClick={() => confirm(`Cancel ${o.pname}'s ${o.itemName}? They get a refund.`) && status(o, 'cancelled')}
+							onClick={() => confirm(`Cancel ${o.pname}'s ${o.itemName} and refund the coins?`) && status(o, 'cancelled')}
 						>
 							Cancel
 						</button>
@@ -200,10 +200,10 @@ function BarTab({ snap, token }: P) {
 				</div>
 			))}
 			<button class="ghost" onClick={() => setCharge(true)}>
-				Charge someone (no phone)
+				Charge a guest
 			</button>
 			<button class="link" onClick={() => setShowClosed(!showClosed)}>
-				{showClosed ? 'Hide' : 'Show'} recent closed orders ({closed.length})
+				{showClosed ? 'Hide' : 'Show'} closed orders ({closed.length})
 			</button>
 			{showClosed && (
 				<ul class="list">
@@ -231,17 +231,17 @@ function ChargeSheet({ snap, token, onClose }: P & { onClose: () => void }) {
 	const [qty, setQty] = useState('1');
 	const item = snap.menu.find(m => m.id === itemId);
 	const submit = async () => {
-		if (!pid || !item) return toast('Pick a player and an item', 'error');
+		if (!pid || !item) return toast('Select a player and an item', 'error');
 		const ok =
 			item.serve === 'bar'
-				? await act(token, { type: 'chargeOrder', pid, itemId, note }, 'Charged. Order is in.')
+				? await act(token, { type: 'chargeOrder', pid, itemId, note }, 'Order added')
 				: await act(token, { type: 'chargeItem', pid, itemId, qty: Number(qty) || 1 }, 'Charged.');
 		if (ok) onClose();
 	};
 	return (
 		<Sheet onClose={onClose}>
 			<div class="sheet-head">
-				<h2>Charge someone</h2>
+				<h2>Charge a guest</h2>
 				<button class="ghost small" onClick={onClose}>
 					Close
 				</button>
@@ -333,7 +333,7 @@ function BankTab({ snap, token }: P) {
 						{p.name} <small>{p.balance}</small>
 					</button>
 				))}
-				{!snap.players.length && <p class="lede">Nobody has joined yet.</p>}
+				{!snap.players.length && <p class="lede">No players yet.</p>}
 			</div>
 			<h3>Quick actions</h3>
 			<div class="st-actions">
@@ -348,7 +348,7 @@ function BankTab({ snap, token }: P) {
 			<h3>Custom</h3>
 			<div class="staff-form card">
 				<div class="row">
-					<input class="st-amt" inputMode="text" placeholder="Amount (−ok)" value={amount} onInput={e => setAmount(e.currentTarget.value)} />
+					<input class="st-amt" inputMode="text" placeholder="Amount" value={amount} onInput={e => setAmount(e.currentTarget.value)} />
 					<select value={kind} onChange={e => setKind(e.currentTarget.value as TxKind)}>
 						{TX_KINDS.map(k => (
 							<option key={k}>{k}</option>
@@ -380,7 +380,7 @@ function BankTab({ snap, token }: P) {
 				</span>
 				<button
 					class="primary"
-					onClick={() => confirm(`Pay ${snap.settings.paydayAmount} Ê$ to everyone now?`) && act(token, { type: 'payday' }, 'Payday!')}
+					onClick={() => confirm(`Pay ${snap.settings.paydayAmount} Ê$ to everyone now?`) && act(token, { type: 'payday' }, 'Payday sent')}
 				>
 					Payday now
 				</button>
@@ -860,8 +860,8 @@ function SettingsTab({ snap, token }: P) {
 				</p>
 			</div>
 			<div class="card staff-form st-danger">
-				<h3>Danger zone</h3>
-				<p class="sub">Wipes all players, money and orders. Menu, perks and settings stay.</p>
+				<h3>Reset party</h3>
+				<p class="sub">Deletes players, balances and orders. Keeps the menu, perks and settings.</p>
 				<input placeholder="Type RESET" value={word} onInput={e => setWord(e.currentTarget.value)} />
 				<button
 					class="danger"
