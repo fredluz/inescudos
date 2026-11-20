@@ -39,7 +39,7 @@ function Join({ onToken }: { onToken: (t: string) => void }) {
 			</aside>
 			<div class="join-panel">
 				<p class="eyebrow">Inês’s Cocktail Bar</p>
-				<h1>Inêscudos</h1>
+				<h1>À conta da Inês</h1>
 				<form class="card" onSubmit={submit}>
 					<label>
 						Your name
@@ -80,7 +80,7 @@ function GuestHome({ snap, token, online, onLogout }: { snap: Snapshot; token: s
 	return (
 		<div class="app guest" onClick={unlockAudio}>
 			<header class="top">
-				<div class="brand"><span>Inêscudos</span></div>
+				<div class="brand"><span>À conta da Inês</span></div>
 				<div class="guest-account">
 					<div class="who">{me.name}</div>
 					{snap.nextPayday && <div class="payday">Payday in {countdown(snap.nextPayday, now)}</div>}

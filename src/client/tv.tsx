@@ -82,7 +82,7 @@ export function Tv() {
 		seen.current = ids;
 	}, [snap]);
 
-	if (!snap) return <div class="tv"><div class="tv-loading">Inêscudos…</div></div>;
+	if (!snap) return <div class="tv"><div class="tv-loading">À conta da Inês…</div></div>;
 
 	const ready = snap.queue.filter((q) => q.status === 'ready');
 	const making = snap.queue.filter((q) => q.status === 'making');
@@ -92,7 +92,7 @@ export function Tv() {
 	return (
 		<div class="tv">
 			<header>
-				<div class="brand"><Illustration name="menu-coupe" /><span>Inêscudos</span></div>
+				<div class="brand"><Illustration name="menu-coupe" /><span>À conta da Inês</span></div>
 				<div class={'bar-status ' + (snap.settings.barOpen ? 'open' : 'closed')}>
 					Bar {snap.settings.barOpen ? 'open' : 'closed'}
 				</div>
