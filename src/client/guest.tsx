@@ -100,9 +100,9 @@ function GuestHome({ snap, token, online, onLogout }: { snap: Snapshot; token: s
 					[
 						['drinks', 'dry-martini', 'Drinks'],
 						['food', 'chocolate-cake', 'Food'],
-						['perks', 'menu-pianist', 'Perks'],
+						['perks', 'nav-perks', 'Perks'],
 						['wallet', 'coins', 'Wallet'],
-						['board', 'menu-coupe', 'Board'],
+						['board', 'nav-board', 'Board'],
 					] as const
 				).map(([id, icon, label]) => (
 					<button key={id} class={tab === id ? 'on' : ''} aria-pressed={tab === id} onClick={() => setTab(id)}>
