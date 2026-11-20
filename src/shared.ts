@@ -168,7 +168,7 @@ export interface Snapshot {
 
 // ---- defaults ----
 
-export const MENU_REVISION = 2;
+export const MENU_REVISION = 3;
 export const BARTENDERS_CHOICE_ID = 'bartenders-choice';
 
 const menuItem = (id: string, name: string, desc: string, section: string, price: number, serve: Serve, stock: number | null = null): MenuItem => ({
@@ -188,6 +188,7 @@ const bartendersChoice: MenuItem = {
 	...cocktail(BARTENDERS_CHOICE_ID, 'Bartender’s Choice', 'Tell us what you like.', 'Bar classics', 15),
 	img: '/illustrations/menu-waiter.webp',
 };
+const kinderBuenoTruffle = food('kinder-bueno-truffle', 'Kinder Bueno Truffle', '', 'Sweets', 4, 12);
 
 export const DEFAULT_MENU: MenuItem[] = [
 	bartendersChoice,
@@ -255,6 +256,7 @@ export const DEFAULT_MENU: MenuItem[] = [
 	food("nutella-truffle", "Nutella Truffle", "Chocolate-coated Nutella truffle. Contains hazelnuts.", "Sweets", 4, 10),
 	food("peanut-butter-truffle", "Peanut Butter Truffle", "Chocolate-coated peanut butter truffle topped with peanuts.", "Sweets", 4, 12),
 	food("biscoff-truffle", "Biscoff Truffle", "White-coated truffle with Biscoff biscuit crumbs.", "Sweets", 4, 9),
+	kinderBuenoTruffle,
 	food("chocolate-cake", "Chocolate Cake", "A slice of birthday cake.", "Sweets", 10),
 
 	// Savouries
@@ -268,6 +270,15 @@ export const DEFAULT_MENU: MenuItem[] = [
 const retiredDefaults = new Set(['mousse', 'pastry', 'brigadeiro', 'white-truffle', 'nut-bonbon', 'oreo']);
 
 export function refreshMenu(previous: MenuItem[], revision = 0): MenuItem[] {
+	if (revision >= MENU_REVISION) return previous;
+	if (revision === 2) {
+		if (previous.some(item => item.id === kinderBuenoTruffle.id)) return previous;
+		const menu = [...previous];
+		const cakeIndex = menu.findIndex(item => item.id === 'chocolate-cake');
+		menu.splice(cakeIndex < 0 ? menu.length : cakeIndex, 0, { ...kinderBuenoTruffle });
+		return menu;
+	}
+
 	const existingChoice = previous.find(item => item.id === BARTENDERS_CHOICE_ID);
 	const featured = existingChoice ? {
 		...bartendersChoice,
@@ -277,7 +288,7 @@ export function refreshMenu(previous: MenuItem[], revision = 0): MenuItem[] {
 	} : { ...bartendersChoice };
 
 	const remaining = previous.filter(item => item.id !== BARTENDERS_CHOICE_ID);
-	if (revision >= 1) return [featured, ...remaining];
+	if (revision === 1) return refreshMenu([featured, ...remaining], 2);
 
 	const byId = new Map(remaining.map(item => [item.id, item]));
 	const printed = DEFAULT_MENU.slice(1).map(item => {
