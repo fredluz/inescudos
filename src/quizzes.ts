@@ -1,23 +1,30 @@
-import type { Quiz, QuizQuestion } from './shared';
+import type { MediaType, Quiz, QuizQuestion } from './shared';
 
 // Starter quizzes loaded into a party that has none. Server-only: the client bundle must never import this file.
 
-type Draft = Omit<QuizQuestion, 'id' | 'media'>;
+type Draft = Omit<QuizQuestion, 'id'>;
 
 const choice = (prompt: string, options: string[], correct: number, seconds = 20): Draft =>
-	({ kind: 'choice', prompt, options, correct, answers: [], value: 0, seconds });
+	({ kind: 'choice', prompt, options, correct, answers: [], value: 0, media: null, seconds });
 const typed = (prompt: string, answers: string[], seconds = 30): Draft =>
-	({ kind: 'text', prompt, options: [], correct: 0, answers, value: 0, seconds });
+	({ kind: 'text', prompt, options: [], correct: 0, answers, value: 0, media: null, seconds });
 const closest = (prompt: string, value: number, seconds = 25): Draft =>
-	({ kind: 'number', prompt, options: [], correct: 0, answers: [], value, seconds });
+	({ kind: 'number', prompt, options: [], correct: 0, answers: [], value, media: null, seconds });
+/** Typed answer to a clip served from public/quiz/. */
+const clip = (prompt: string, type: MediaType, file: string, answers: string[], seconds = 30): Draft =>
+	({ ...typed(prompt, answers, seconds), media: { type, url: `/quiz/${file}` } });
 
-const quiz = (id: string, title: string, questions: Draft[]): Quiz => ({
+const quiz = (id: string, title: string, questions: Draft[], category = title): Quiz => ({
 	id,
 	title,
-	category: title,
+	category,
 	reward: 5,
-	questions: questions.map((q, i) => ({ ...q, id: `${id}-${i + 1}`, media: null })),
+	questions: questions.map((q, i) => ({ ...q, id: `${id}-${i + 1}` })),
 });
+
+const song = (file: string, answers: string[]) => clip('Name the song.', 'audio', `${file}.mp3`, answers, 25);
+const game = (file: string, answers: string[]) => clip('Name the game.', 'audio', `${file}.mp3`, answers, 25);
+const scene = (file: string, answers: string[]) => clip('Name the film.', 'video', `${file}.mp4`, answers, 35);
 
 const STARTER: Quiz[] = [
 	quiz('films', 'Films', [
@@ -100,6 +107,51 @@ const STARTER: Quiz[] = [
 		typed('In 2019, two million people signed up on Facebook to storm what?', ['Area 51']),
 		closest('What year did fidget spinners take over?', 2017),
 	]),
+	quiz('name-the-song', 'Name the song', [
+		song('talking-heads-psycho-killer', ['Psycho Killer']),
+		song('radiohead-eiirp', ['Everything In Its Right Place']),
+		song('madvillain-accordion', ['Accordion']),
+		song('mbv-only-shallow', ['Only Shallow']),
+		song('frank-pink-white', ['Pink + White', 'Pink and White']),
+		song('joy-division-lwtua', ['Love Will Tear Us Apart']),
+		song('death-grips-guillotine', ['Guillotine']),
+		song('aphex-avril', ['Avril 14th', 'Avril 14', 'Avril']),
+		song('smiths-charming-man', ['This Charming Man']),
+		song('arctic-dwk', ['Do I Wanna Know', 'Do I Want To Know']),
+		song('massive-teardrop', ['Teardrop']),
+		song('tyler-earfquake', ['EARFQUAKE', 'Earthquake']),
+		song('pixies-debaser', ['Debaser']),
+		song('portishead-glory-box', ['Glory Box']),
+		song('bon-iver-holocene', ['Holocene']),
+		song('nmh-holland', ['Holland, 1945', 'Holland']),
+	], 'Music'),
+	quiz('name-the-game', 'Name the game', [
+		game('mc-villager', ['Minecraft']),
+		game('megalovania', ['Undertale']),
+		game('ds-you-died', ['Dark Souls']),
+		game('outer-wilds', ['Outer Wilds']),
+		game('mgs-alert', ['Metal Gear Solid', 'Metal Gear', 'MGS']),
+		game('dirtmouth', ['Hollow Knight']),
+		game('zelda-secret', ['The Legend of Zelda', 'Zelda']),
+		game('whirling-in-rags', ['Disco Elysium']),
+		game('pokecenter', ['Pokémon', 'Pokemon']),
+		game('sh2-promise', ['Silent Hill 2', 'Silent Hill']),
+		game('mario-coin', ['Super Mario Bros', 'Super Mario', 'Mario']),
+		game('ddlc-your-reality', ['Doki Doki Literature Club', 'DDLC', 'Doki Doki']),
+		game('still-alive', ['Portal']),
+		game('c418-sweden', ['Minecraft']),
+	], 'Games'),
+	quiz('name-the-film', 'Name the film', [
+		scene('heat-diner', ['Heat']),
+		scene('paprika-parade', ['Paprika']),
+		scene('mulholland-llorando', ['Mulholland Drive', 'Mulholland Dr']),
+		scene('oldboy-hallway', ['Oldboy', 'Old Boy']),
+		clip('Name the film from its theme.', 'audio', 'yumeji.mp3', ['In the Mood for Love'], 30),
+		scene('lighthouse-curse', ['The Lighthouse', 'Lighthouse']),
+		scene('eternal-montauk', ['Eternal Sunshine of the Spotless Mind', 'Eternal Sunshine']),
+		scene('blue-velvet-in-dreams', ['Blue Velvet']),
+		scene('shining-johnny', ['The Shining', 'Shining']),
+	], 'Films'),
 ];
 
 export const starterQuizzes = (): Quiz[] => structuredClone(STARTER);

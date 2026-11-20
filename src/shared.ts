@@ -204,6 +204,8 @@ export interface State {
 	lastPaydayKey?: string;
 	menuRevision?: number;
 	quizzes: Quiz[];
+	/** starter quiz ids already offered, so a deleted starter quiz stays deleted */
+	seededQuizzes: string[];
 	game: QuizGame | null;
 }
 
@@ -466,6 +468,7 @@ export const defaultState = (): State => ({
 	tokens: {},
 	staffTokens: [],
 	quizzes: [],
+	seededQuizzes: [],
 	game: null,
 });
 

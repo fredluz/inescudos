@@ -89,7 +89,13 @@ export class Party extends DurableObject<Env> {
 		ctx.blockConcurrencyWhile(async () => {
 			const stored = await ctx.storage.get<State>('state');
 			this.s = { ...defaultState(), ...stored };
-			if (!stored?.quizzes) this.s.quizzes = starterQuizzes();
+			const fresh = starterQuizzes().filter(q => !this.s.seededQuizzes.includes(q.id));
+			if (fresh.length) {
+				const taken = new Set(this.s.quizzes.map(q => q.id));
+				this.s.quizzes.push(...fresh.filter(q => !taken.has(q.id)));
+				this.s.seededQuizzes.push(...fresh.map(q => q.id));
+				await ctx.storage.put('state', this.s);
+			}
 			if (stored) {
 				const revision = stored.menuRevision ?? 0;
 				const olderMenu = revision < MENU_REVISION;
@@ -610,6 +616,7 @@ export class Party extends DurableObject<Env> {
 					settings: this.s.settings,
 					staffTokens: this.s.staffTokens,
 					quizzes: this.s.quizzes,
+					seededQuizzes: this.s.seededQuizzes,
 				};
 				for (const m of this.s.menu) if (!m.archived) m.available = true;
 				break;
