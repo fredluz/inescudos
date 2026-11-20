@@ -1,6 +1,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "inescudos",
+	"name": "a-conta-da-ines",
+	"workers_dev": true,
 	"main": "src/worker.ts",
 	"compatibility_date": "2026-11-01",
 	"assets": {
