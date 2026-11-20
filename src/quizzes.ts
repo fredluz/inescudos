@@ -150,7 +150,6 @@ const STARTER: Quiz[] = [
 		scene('lighthouse-curse', ['The Lighthouse', 'Lighthouse']),
 		scene('eternal-montauk', ['Eternal Sunshine of the Spotless Mind', 'Eternal Sunshine']),
 		scene('blue-velvet-in-dreams', ['Blue Velvet']),
-		scene('shining-johnny', ['The Shining', 'Shining']),
 	], 'Films'),
 ];
 
