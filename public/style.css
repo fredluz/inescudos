@@ -263,7 +263,7 @@ label.check input {
 	padding: calc(0.75rem + env(safe-area-inset-top)) 1rem 0.75rem;
 	background: color-mix(in srgb, var(--paper) 92%, transparent);
 	backdrop-filter: blur(8px);
-	border-bottom: 1px solid var(--line);
+	border-bottom: 0;
 }
 
 .top .who {
@@ -294,7 +294,7 @@ label.check input {
 	height: calc(var(--tabs-h) + env(safe-area-inset-bottom));
 	padding-bottom: env(safe-area-inset-bottom);
 	background: var(--card);
-	border-top: 1px solid var(--line);
+	border-top: 0;
 }
 
 .tabs button {
@@ -709,6 +709,68 @@ label.check input {
 
 /* ---------- join ---------- */
 
+.wallet-page, .board-page {
+	max-width: 760px;
+	margin: 0 auto;
+}
+.account-masthead {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 1.2rem;
+	padding: .5rem 0 1.25rem;
+}
+.account-masthead .illustration { width: 76px; height: 88px; }
+.account-masthead .eyebrow { margin: 0 0 .4rem; }
+.account-masthead h1 {
+	margin: 0;
+	font: 400 clamp(2.5rem, 8vw, 4rem)/1.1 var(--display);
+}
+.account-masthead h1::first-letter { color: var(--vermillion); }
+.wallet-balance {
+	text-align: center;
+	padding: 1rem;
+	margin-bottom: 1.5rem;
+	border-block: 1px solid var(--line);
+}
+.wallet-balance > .eyebrow { display: block; margin: 0; }
+.wallet-balance > .money { display: block; font: 400 3.2rem/1.4 var(--display); }
+.wallet-balance .sub { margin: .3rem 0 0; }
+:is(.wallet-page, .board-page) > .card {
+	background: transparent;
+	border: 0;
+	padding: 0;
+	margin-bottom: 1.75rem;
+}
+:is(.wallet-page, .board-page) h3, .board-page > .section {
+	display: flex;
+	align-items: center;
+	gap: .8rem;
+	font: italic 700 1.6rem/1.3 var(--serif);
+	color: var(--dark);
+	border: 0;
+	margin: 0 0 1rem;
+}
+:is(.wallet-page, .board-page) h3::after, .board-page > .section::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: var(--line);
+}
+.wallet-page form.card {
+	border-left: 3px solid var(--ink);
+	padding-left: 1rem;
+}
+.wallet-page input, .wallet-page select { background: rgb(250 242 229 / .45); }
+.wallet-page .tx { padding: .75rem 0; border-bottom-style: dotted; }
+.wallet-page > .link { display: block; margin: 0 auto; }
+.board-page .ranks li { padding: .8rem .35rem; border-bottom-style: dotted; }
+.board-page .ranks li::before { font: 400 1.6rem/1 var(--display); width: 2rem; }
+.board-page .ranks li:first-child { background: var(--wash); }
+.board-page .ranks li.me { border-left: 3px solid var(--ink); padding-left: .6rem; }
+.board-page .feed li { border-bottom-style: dotted; padding: .8rem 0; }
+.board-page .feed-art { width: 2rem; height: 2rem; }
+
 .join {
 	max-width: 420px;
 	margin: 0 auto;
@@ -773,6 +835,22 @@ button:focus-visible, a:focus-visible {
 	outline-offset: 3px;
 }
 .illustration, .thumb { object-fit: contain; mix-blend-mode: multiply; }
+img:is(
+	[src="/illustrations/biscoff-mousse.webp"],
+	[src="/illustrations/oreo-mousse.webp"],
+	[src="/illustrations/covered-oreos.webp"],
+	[src="/illustrations/nutella-truffle.webp"],
+	[src="/illustrations/peanut-butter-truffle.webp"],
+	[src="/illustrations/biscoff-truffle.webp"],
+	[src="/illustrations/kinder-bueno-truffle.webp"],
+	[src="/illustrations/chocolate-cake.webp"],
+	[src="/illustrations/croissant.webp"],
+	[src="/illustrations/croquetes.webp"],
+	[src="/illustrations/rissois.webp"],
+	[src="/illustrations/other-savouries.webp"]
+) {
+	filter: url('/food-ink-filter.svg#food-ink');
+}
 .thumb { background: transparent; }
 .eyebrow {
 	margin: 0;
@@ -790,7 +868,7 @@ button:focus-visible, a:focus-visible {
 .join h1::first-letter, .menu-masthead h1::first-letter { color: var(--vermillion); }
 .menu-grid strong::first-letter { color: var(--ink); }
 .top {
-	border-bottom: 3px double var(--line);
+	border-bottom: 0;
 	background: var(--paper);
 	padding-right: max(1rem, calc((100% - 1100px) / 2));
 	padding-left: max(1rem, calc((100% - 1100px) / 2));
@@ -801,7 +879,7 @@ button:focus-visible, a:focus-visible {
 .content { max-width: 1080px; padding: 1.1rem clamp(.75rem, 3vw, 2rem) 2rem; }
 .top .money.big { font-size: clamp(1.3rem, 3.5vw, 2rem); background: transparent; padding: .2rem .3rem; }
 .tabs {
-	border-top: 3px double var(--line);
+	border-top: 0;
 	background: var(--card);
 	justify-content: center;
 }
@@ -815,7 +893,7 @@ button:focus-visible, a:focus-visible {
 	text-transform: uppercase;
 }
 .tabs .illustration { height: 28px; width: 34px; justify-self: center; }
-.tabs button.on { color: var(--ink); box-shadow: inset 0 3px var(--ink); background: var(--wash-hover); }
+.tabs button.on { color: var(--ink); box-shadow: none; background: var(--wash-hover); }
 .primary { background: var(--ink); border: 1px solid var(--ink); }
 .ghost { border-color: var(--line); }
 .primary:hover:not(:disabled) { background: #752119; }
@@ -832,10 +910,13 @@ button:focus-visible, a:focus-visible {
 	min-height: 190px;
 	padding: 1rem;
 	text-align: center;
-	border: 1px solid var(--line);
+	border: 1px solid transparent;
 	outline: 1px solid var(--line);
 	outline-offset: -6px;
-	background: var(--wash);
+	background: transparent;
+}
+.menu-masthead.drinks-masthead {
+	grid-template-columns: minmax(0, 1fr);
 }
 .menu-masthead::before, .menu-masthead::after {
 	content: '';
@@ -871,15 +952,16 @@ button:focus-visible, a:focus-visible {
 	min-height: 118px;
 	padding: .7rem clamp(.55rem, 3vw, 1.6rem);
 	gap: clamp(.45rem, 3vw, 1.5rem);
-	border: 1px solid var(--line);
-	border-left: 4px solid var(--ink);
-	background: var(--card);
+	border: 2px solid var(--line);
+	border-left: 7px solid var(--ink);
+	background: transparent;
 	color: var(--dark);
 }
 .featured-drink:hover:not(:disabled) { background: var(--wash-hover); }
 .featured-drink .thumb { width: clamp(56px, 17vw, 102px); height: clamp(73px, 17vw, 102px); }
-.featured-drink strong { font: italic 700 clamp(1.25rem, 4.45vw, 2.4rem)/1.1 var(--serif); color: var(--ink); }
+.featured-drink strong { font: italic 700 clamp(1.5rem, 5.5vw, 2.7rem)/1.1 var(--serif); color: var(--ink); }
 .featured-drink strong::first-letter { color: inherit; }
+.featured-prompt { display: block; color: var(--muted); font-size: .9rem; margin-bottom: .2rem; }
 .featured-drink .sub { font-size: .94rem; }
 .featured-drink .money { font-size: clamp(1.15rem, 3vw, 1.5rem); }
 .menu-section { margin-top: 1.3rem; }

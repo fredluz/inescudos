@@ -176,12 +176,11 @@ function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve:
 	const line = snap.queue.filter(q => q.status !== 'ready');
 	return (
 		<>
-			<div class={`menu-masthead ${serve === 'self' ? 'food-masthead' : ''}`}>
-				<Illustration name={serve === 'bar' ? 'menu-coupe' : 'other-savouries'} className="menu-hero-art" />
+			<div class={`menu-masthead ${serve === 'self' ? 'food-masthead' : 'drinks-masthead'}`}>
+				{serve === 'self' && <Illustration name="other-savouries" className="menu-hero-art" />}
 				<div>
 					<p class="eyebrow">Inês’s Cocktail Bar</p>
 					<h1>{serve === 'bar' ? 'Drinks' : 'Food'}</h1>
-					{serve === 'self' && <p class="lede">Self-service. Pay before collecting.</p>}
 					{serve === 'bar' && (
 						<div class="menu-switch" role="group" aria-label="Drinks menu">
 							<button class={!mocktails ? 'on' : ''} aria-pressed={!mocktails} onClick={() => setMocktails(false)}>Cocktails</button>
@@ -189,7 +188,7 @@ function MenuTab({ snap, token, serve }: { snap: Snapshot; token: string; serve:
 						</div>
 					)}
 				</div>
-				<Illustration name={serve === 'bar' ? 'menu-waiter' : 'chocolate-cake'} className="menu-side-art" />
+				{serve === 'self' && <Illustration name="chocolate-cake" className="menu-side-art" />}
 			</div>
 			{serve === 'bar' && !snap.settings.barOpen && <div class="notice">Bar closed. Food is still available.</div>}
 			{serve === 'bar' && active.length > 0 && (
@@ -240,6 +239,7 @@ function MenuEntry({ item, featured = false, onPick }: { item: MenuItem; feature
 		<button class={`item${featured ? ' featured-drink' : ''}${unavailable ? ' out' : ''}`} disabled={unavailable} onClick={onPick}>
 			<Thumb img={item.img} fallback={item.serve === 'self' ? 'other-savouries' : 'dry-martini'} size={featured ? 102 : 68} />
 			<div class="item-body">
+				{featured && <span class="featured-prompt">Not sure?</span>}
 				<strong>{item.name}</strong>
 				<span class="sub">{item.desc}</span>
 				{item.stock != null && item.stock > 0 && <span class="tag warn">{item.stock} left</span>}
@@ -424,13 +424,19 @@ function WalletTab({ snap, token, onLogout }: { snap: Snapshot; token: string; o
 		}
 	};
 	return (
-		<>
-			{snap.nextPayday != null && (
-				<section class="card">
-					<h3>Next payday</h3>
-					<p class="sub">{clock(snap.nextPayday)} · +{snap.settings.paydayAmount} Ê$</p>
-				</section>
-			)}
+		<div class="wallet-page">
+			<header class="account-masthead">
+				<Illustration name="coins" />
+				<div>
+					<p class="eyebrow">Inês’s Cocktail Bar</p>
+					<h1>Wallet</h1>
+				</div>
+			</header>
+			<section class="wallet-balance">
+				<span class="eyebrow">Your balance</span>
+				<Money n={snap.me!.balance} big />
+				{snap.nextPayday != null && <p class="sub">Next payday {clock(snap.nextPayday)} · +{snap.settings.paydayAmount} Ê$</p>}
+			</section>
 			<form class="card" onSubmit={send}>
 				<h3>Send coins</h3>
 				<label>
@@ -479,7 +485,7 @@ function WalletTab({ snap, token, onLogout }: { snap: Snapshot; token: string; o
 			>
 				Log out
 			</button>
-		</>
+		</div>
 	);
 }
 
@@ -488,7 +494,14 @@ export function Board({ snap, compact }: { snap: Snapshot; compact?: boolean }) 
 	const earners = [...snap.players].filter(p => p.earned > 0).sort((a, b) => b.earned - a.earned);
 	const meId = snap.me?.id;
 	return (
-		<>
+		<div class={compact ? undefined : 'board-page'}>
+			{!compact && <header class="account-masthead">
+				<Illustration name="nav-board" />
+				<div>
+					<p class="eyebrow">Inês’s Cocktail Bar</p>
+					<h1>Board</h1>
+				</div>
+			</header>}
 			<section class="card">
 				<h3>Top balances</h3>
 				<ol class="ranks">
@@ -518,7 +531,7 @@ export function Board({ snap, compact }: { snap: Snapshot; compact?: boolean }) 
 					<Feed items={snap.feed} empty="No activity yet." />
 				</>
 			)}
-		</>
+		</div>
 	);
 }
 

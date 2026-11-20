@@ -168,7 +168,7 @@ export interface Snapshot {
 
 // ---- defaults ----
 
-export const MENU_REVISION = 3;
+export const MENU_REVISION = 4;
 export const BARTENDERS_CHOICE_ID = 'bartenders-choice';
 
 const menuItem = (id: string, name: string, desc: string, section: string, price: number, serve: Serve, stock: number | null = null): MenuItem => ({
@@ -185,7 +185,7 @@ const food = (id: string, name: string, desc: string, section: string, price: nu
 	menuItem(id, name, desc, section, price, 'self', stock);
 
 const bartendersChoice: MenuItem = {
-	...cocktail(BARTENDERS_CHOICE_ID, 'Bartender’s Choice', 'Tell us what you like.', 'Bar classics', 15),
+	...cocktail(BARTENDERS_CHOICE_ID, 'Bartender’s Choice', 'Tell us the flavours you like, and we’ll choose a cocktail for you.', 'Bar classics', 15),
 	img: '/illustrations/menu-waiter.webp',
 };
 const kinderBuenoTruffle = food('kinder-bueno-truffle', 'Kinder Bueno Truffle', '', 'Sweets', 4, 12);
@@ -271,6 +271,8 @@ const retiredDefaults = new Set(['mousse', 'pastry', 'brigadeiro', 'white-truffl
 
 export function refreshMenu(previous: MenuItem[], revision = 0): MenuItem[] {
 	if (revision >= MENU_REVISION) return previous;
+	previous = previous.map(item => item.id === BARTENDERS_CHOICE_ID ? { ...item, desc: bartendersChoice.desc } : item);
+	if (revision === 3) return previous;
 	if (revision === 2) {
 		if (previous.some(item => item.id === kinderBuenoTruffle.id)) return previous;
 		const menu = [...previous];
