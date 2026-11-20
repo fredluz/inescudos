@@ -80,7 +80,7 @@ function GuestHome({ snap, token, online, onLogout }: { snap: Snapshot; token: s
 	return (
 		<div class="app guest" onClick={unlockAudio}>
 			<header class="top">
-				<div class="brand"><Illustration name="menu-pianist" /><span>Inêscudos</span></div>
+				<div class="brand"><span>Inêscudos</span></div>
 				<div class="guest-account">
 					<div class="who">{me.name}</div>
 					{snap.nextPayday && <div class="payday">Payday in {countdown(snap.nextPayday, now)}</div>}
